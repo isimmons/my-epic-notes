@@ -26,11 +26,14 @@ export async function action({ request, params }: DataFunctionArgs) {
   const title = body.get('title');
   const content = body.get('content');
 
-  if (!title || !content) return;
+  invariantResponse(typeof title === 'string', 'title must be of type string');
+  invariantResponse(
+    typeof content === 'string',
+    'content must be of type string',
+  );
 
   db.note.update({
     where: { id: { equals: params.noteId } },
-    // @ts-expect-error
     data: { title, content },
   });
 
