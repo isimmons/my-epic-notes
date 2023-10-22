@@ -28,7 +28,17 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  db.note.delete({ where: { id: { equals: params.noteId } } });
+  const form = await request.formData();
+  const intent = form.get('intent');
+
+  switch (intent) {
+    case 'delete': {
+      db.note.delete({ where: { id: { equals: params.noteId } } });
+    }
+    default: {
+      throw new Response(`Invalid intent: ${intent}`);
+    }
+  }
 
   return redirect(`/users/${params.username}/notes`);
 }
@@ -68,7 +78,12 @@ export default function NoteRoute() {
       </div>
       <div className={floatingToolbarClassName}>
         <Form method="POST">
-          <Button type="submit" variant="destructive">
+          <Button
+            type="submit"
+            variant="destructive"
+            name="intent"
+            value="delete"
+          >
             Delete
           </Button>
         </Form>
