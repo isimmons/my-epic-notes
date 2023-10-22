@@ -1,5 +1,10 @@
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
-import { Link, useLoaderData, useRouteError } from '@remix-run/react';
+import {
+  json,
+  redirect,
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+} from '@remix-run/node';
+import { Form, Link, useLoaderData, useRouteError } from '@remix-run/react';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button } from '~/components/ui/button';
 import { db } from '~/utils/db.server';
@@ -20,6 +25,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
       content: note.content,
     },
   });
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  db.note.delete({ where: { id: { equals: params.noteId } } });
+
+  return redirect(`/users/${params.username}/notes`);
 }
 
 export function ErrorBoundary() {
@@ -56,7 +67,11 @@ export default function NoteRoute() {
         <p className="whitespace-break-spaces text-sm md:text-lg">{content}</p>
       </div>
       <div className={floatingToolbarClassName}>
-        <Button variant="destructive">Delete</Button>
+        <Form method="POST">
+          <Button type="submit" variant="destructive">
+            Delete
+          </Button>
+        </Form>
         <Button asChild>
           <Link to="edit">Edit</Link>
         </Button>
