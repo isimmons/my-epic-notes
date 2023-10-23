@@ -34,6 +34,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   switch (intent) {
     case 'delete': {
       db.note.delete({ where: { id: { equals: params.noteId } } });
+      break;
     }
     default: {
       throw new Response(`Invalid intent: ${intent}`);
