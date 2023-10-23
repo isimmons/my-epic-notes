@@ -64,8 +64,6 @@ export default function NoteEdit() {
         <Textarea
           name="content"
           id="content"
-          cols={30}
-          rows={10}
           defaultValue={content}
           className="whitespace-break-spaces text-sm md:text-lg"
         />
