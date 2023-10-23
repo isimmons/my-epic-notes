@@ -1,7 +1,12 @@
 import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
-import { Form, useLoaderData } from '@remix-run/react';
+import {
+  Form,
+  useFormAction,
+  useLoaderData,
+  useNavigation,
+} from '@remix-run/react';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
-import { Button, Input, Label, Textarea } from '~/components/ui';
+import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 
@@ -45,6 +50,12 @@ export default function NoteEdit() {
   const {
     note: { title, content },
   } = data;
+  const navigation = useNavigation();
+  const formAction = useFormAction();
+  const isPending =
+    navigation.state !== 'idle' &&
+    navigation.formAction === formAction &&
+    navigation.formMethod === 'POST';
 
   return (
     <div className="absolute inset-0 flex flex-col pt-12 px-5 ">
@@ -71,7 +82,13 @@ export default function NoteEdit() {
           <Button type="reset" variant={'secondary'}>
             Reset
           </Button>
-          <Button type="submit">Submit</Button>
+          <StatusButton
+            type="submit"
+            status={isPending ? 'pending' : 'idle'}
+            disabled={isPending}
+          >
+            Submit
+          </StatusButton>
         </div>
       </Form>
     </div>
