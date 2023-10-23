@@ -13,6 +13,7 @@ import {
 } from '@remix-run/react';
 import tailwind from '~/styles/tailwind.css';
 import './styles/global.css';
+import { getEnv } from './utils/env.server';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -20,7 +21,7 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader() {
-  return json({ username: os.userInfo().username });
+  return json({ username: os.userInfo().username, ENV: getEnv() });
 }
 
 export default function App() {
@@ -55,6 +56,11 @@ export default function App() {
           <p>Built with ♥️ by {data.username}</p>
         </div>
         <div className="h-5" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+          }}
+        />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
