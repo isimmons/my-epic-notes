@@ -5,6 +5,7 @@ import {
   useLoaderData,
   useNavigation,
 } from '@remix-run/react';
+import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { db } from '~/utils/db.server';
@@ -92,5 +93,15 @@ export default function NoteEdit() {
         </div>
       </Form>
     </div>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => <p>Note does not exist with id {params.noteId}</p>,
+      }}
+    />
   );
 }

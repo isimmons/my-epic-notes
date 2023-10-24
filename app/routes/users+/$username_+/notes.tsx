@@ -4,6 +4,7 @@ import {
   type MetaFunction,
 } from '@remix-run/node';
 import { Link, NavLink, Outlet, useLoaderData } from '@remix-run/react';
+import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { db } from '~/utils/db.server';
 import { assertDefined, cn } from '~/utils/misc.tsx';
 
@@ -100,5 +101,15 @@ export default function NotesRoute() {
         </div>
       </div>
     </main>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => <p>No user notes found for {params.username}</p>,
+      }}
+    />
   );
 }
