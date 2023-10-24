@@ -3,12 +3,14 @@ import {
   redirect,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
+  type MetaFunction,
 } from '@remix-run/node';
 import { Form, Link, useLoaderData, useRouteError } from '@remix-run/react';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button } from '~/components/ui/button';
 import { db } from '~/utils/db.server';
 import { assertDefined, isErrorResponse } from '~/utils/misc';
+import { getNoteExcerpt } from '~/utils/noteHelpers';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = db.note.findFirst({
@@ -23,9 +25,23 @@ export async function loader({ params }: LoaderFunctionArgs) {
     note: {
       title: note.title,
       content: note.content,
+      owner: note.owner,
     },
   });
 }
+
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+  const note = data?.note;
+  const displayName = note?.owner ?? params.username;
+
+  return [
+    { title: `${note?.title} | By: ${displayName}` },
+    {
+      name: 'description',
+      content: `${getNoteExcerpt(note?.content)}`,
+    },
+  ];
+};
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const form = await request.formData();

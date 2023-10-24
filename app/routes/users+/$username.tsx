@@ -1,4 +1,4 @@
-import { json, type DataFunctionArgs } from '@remix-run/node';
+import { json, type DataFunctionArgs, MetaFunction } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
 import { db } from '~/utils/db.server';
 import { assertDefined } from '~/utils/misc';
@@ -19,6 +19,15 @@ export async function loader({ params }: DataFunctionArgs) {
     },
   });
 }
+
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+  const displayName = data?.user.name ?? params.username;
+
+  return [
+    { title: `${displayName} | Epic Notes` },
+    { name: 'description', content: `${displayName}'s Epic Notes profile` },
+  ];
+};
 
 export default function ProfileRoute() {
   const data = useLoaderData<typeof loader>();

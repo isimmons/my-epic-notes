@@ -1,4 +1,8 @@
-import { json, type DataFunctionArgs } from '@remix-run/node';
+import {
+  json,
+  type DataFunctionArgs,
+  type MetaFunction,
+} from '@remix-run/node';
 import { Link, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { db } from '~/utils/db.server';
 import { assertDefined, cn } from '~/utils/misc.tsx';
@@ -32,6 +36,18 @@ export async function loader({ params }: DataFunctionArgs) {
     notes: notesData,
   });
 }
+
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+  const displayName = data?.user.name ?? params.username;
+
+  return [
+    { title: `${displayName}'s Notes` },
+    {
+      name: 'description',
+      content: `Notes written by ${displayName}`,
+    },
+  ];
+};
 
 export default function NotesRoute() {
   const data = useLoaderData<typeof loader>();
