@@ -20,6 +20,8 @@ export async function loader({ params }: DataFunctionArgs) {
   });
 }
 
+export type UsernameLoader = typeof loader;
+
 export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const displayName = data?.user.name ?? params.username;
 
