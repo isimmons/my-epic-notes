@@ -3,9 +3,10 @@ import {
   type DataFunctionArgs,
   type MetaFunction,
 } from '@remix-run/node';
-import { Link, useLoaderData, useRouteError } from '@remix-run/react';
+import { Link, useLoaderData } from '@remix-run/react';
+import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { db } from '~/utils/db.server';
-import { assertDefined, isErrorResponse } from '~/utils/misc';
+import { assertDefined } from '~/utils/misc';
 
 export async function loader({ params }: DataFunctionArgs) {
   const user = db.user.findFirst({
@@ -36,21 +37,14 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 };
 
 export function ErrorBoundary() {
-  const error = useRouteError();
-
-  const isError = isErrorResponse(error);
-
   return (
-    <div className="w-full text-center p-10 bg-red-600">
-      {isError && (
-        <>
-          <h2 className="mb-2 pt-12 text-h2 lg:mb-6">{error.status}</h2>
-          <p className="whitespace-break-spaces text-sm md:text-lg">
-            {error.data}
-          </p>
-        </>
-      )}
-    </div>
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => (
+          <p>{params.username}??? We don't know that fool!</p>
+        ),
+      }}
+    />
   );
 }
 
