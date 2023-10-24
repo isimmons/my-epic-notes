@@ -2,8 +2,12 @@ import type { MetaFunction } from '@remix-run/node';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'New Remix App' },
-    { name: 'description', content: 'Welcome to Remix!' },
+    { title: 'Epic Notes' },
+    {
+      name: 'description',
+      content:
+        'Remix app based on the Epic Notes app from epicweb.dev, foundations workshop ',
+    },
   ];
 };
 
