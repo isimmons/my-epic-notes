@@ -37,7 +37,9 @@ export async function loader({ params }: DataFunctionArgs) {
   });
 }
 
-export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+export type NotesLoader = typeof loader;
+
+export const meta: MetaFunction<NotesLoader> = ({ data, params }) => {
   const displayName = data?.user.name ?? params.username;
 
   return [

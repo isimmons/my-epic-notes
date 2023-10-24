@@ -11,6 +11,7 @@ import { Button } from '~/components/ui/button';
 import { db } from '~/utils/db.server';
 import { assertDefined, isErrorResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
+import { type NotesLoader } from './notes';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = db.note.findFirst({
@@ -25,20 +26,32 @@ export async function loader({ params }: LoaderFunctionArgs) {
     note: {
       title: note.title,
       content: note.content,
-      owner: note.owner,
     },
   });
 }
 
-export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
-  const note = data?.note;
-  const displayName = note?.owner ?? params.username;
+export type NoteByIdLoader = typeof loader;
+
+export const meta: MetaFunction<
+  NoteByIdLoader,
+  {
+    'routes/users+/$username_+/notes': NotesLoader;
+  }
+> = ({ data, params, matches }) => {
+  const noteMatch = matches.find(
+    m => m.id === 'routes/users+/$username_+/notes',
+  );
+
+  const displayName = noteMatch?.data.user.name ?? params.username;
+
+  const noteTitle = data?.note.title ?? 'Note';
+  const noteContent = getNoteExcerpt(data?.note.content);
 
   return [
-    { title: `${note?.title} | By: ${displayName}` },
+    { title: `${noteTitle} | By: ${displayName}` },
     {
       name: 'description',
-      content: `${getNoteExcerpt(note?.content)}`,
+      content: `${getNoteExcerpt(noteContent)}`,
     },
   ];
 };
@@ -62,7 +75,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  console.log(error);
 
   const isError = isErrorResponse(error);
 
