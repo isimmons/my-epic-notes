@@ -14,7 +14,6 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader() {
-  throw new Error('Foobar!');
   return json({ username: os.userInfo().username, ENV: getEnv() });
 }
 
