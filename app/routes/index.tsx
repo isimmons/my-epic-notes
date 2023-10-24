@@ -1,16 +1,3 @@
-import type { MetaFunction } from '@remix-run/node';
-
-export const meta: MetaFunction = () => {
-  return [
-    { title: 'Epic Notes' },
-    {
-      name: 'description',
-      content:
-        'Remix app based on the Epic Notes app from epicweb.dev, foundations workshop ',
-    },
-  ];
-};
-
 export default function Index() {
   return (
     <div className="container text-center">
