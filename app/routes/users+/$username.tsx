@@ -3,9 +3,9 @@ import {
   type DataFunctionArgs,
   type MetaFunction,
 } from '@remix-run/node';
-import { Link, useLoaderData } from '@remix-run/react';
+import { Link, useLoaderData, useRouteError } from '@remix-run/react';
 import { db } from '~/utils/db.server';
-import { assertDefined } from '~/utils/misc';
+import { assertDefined, isErrorResponse } from '~/utils/misc';
 
 export async function loader({ params }: DataFunctionArgs) {
   const user = db.user.findFirst({
@@ -34,6 +34,25 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
     { name: 'description', content: `${displayName}'s Epic Notes profile` },
   ];
 };
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  const isError = isErrorResponse(error);
+
+  return (
+    <div className="w-full text-center p-10 bg-red-600">
+      {isError && (
+        <>
+          <h2 className="mb-2 pt-12 text-h2 lg:mb-6">{error.status}</h2>
+          <p className="whitespace-break-spaces text-sm md:text-lg">
+            {error.data}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function ProfileRoute() {
   const data = useLoaderData<typeof loader>();
