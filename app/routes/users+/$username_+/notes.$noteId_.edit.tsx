@@ -68,6 +68,8 @@ export default function NoteEdit() {
           name="title"
           type="text"
           defaultValue={title}
+          required
+          maxLength={100}
           className="text-sm md:text-lg"
         />
         <Label htmlFor="content" className="text-sm md:text-lg">
@@ -77,6 +79,8 @@ export default function NoteEdit() {
           name="content"
           id="content"
           defaultValue={content}
+          required
+          maxLength={10_000}
           className="whitespace-break-spaces text-sm md:text-lg"
         />
         <div className={floatingToolbarClassName}>
