@@ -1,5 +1,6 @@
 import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
+import { useId } from 'react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
@@ -82,11 +83,17 @@ export async function action({ request, params }: DataFunctionArgs) {
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
 }
 
-function ErrorList({ errors }: { errors?: Array<string> | null }) {
+function ErrorList({
+  id,
+  errors,
+}: {
+  id?: string;
+  errors?: Array<string> | null;
+}) {
   if (!errors || errors.length < 1) return null;
 
   return (
-    <ul className="flex flex-col gap-1 text-sm text-red-600 italic">
+    <ul id={id} className="flex flex-col gap-1 text-sm text-red-600 italic">
       {errors.map((error, i) => (
         <li key={i}>{error}</li>
       ))}
@@ -101,6 +108,10 @@ export default function NoteEdit() {
   const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
   const formId = 'note-editor';
+  const titleId = useId();
+  const titleErrorsId = useId();
+  const contentId = useId();
+  const contentErrorsId = useId();
 
   const fieldErrors =
     actionData?.status === 'error' ? actionData.errors.fieldErrors : null;
@@ -118,29 +129,34 @@ export default function NoteEdit() {
     >
       <div className="flex flex-col gap-1">
         <div>
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor={titleId}>Title</Label>
           <Input
+            id={titleId}
             name="title"
             type="text"
             defaultValue={title}
             required
             maxLength={100}
+            aria-invalid={fieldErrors?.title.length ? true : false}
+            aria-describedby={titleErrorsId}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList errors={fieldErrors?.title} />
+            <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
           </div>
         </div>
         <div>
-          <Label htmlFor="content">Content</Label>
+          <Label htmlFor={contentId}>Content</Label>
           <Textarea
+            id={contentId}
             name="content"
-            id="content"
             defaultValue={content}
             required
             maxLength={10_000}
+            aria-invalid={fieldErrors?.content.length ? true : false}
+            aria-describedby={contentErrorsId}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList errors={fieldErrors?.content} />
+            <ErrorList id={contentErrorsId} errors={fieldErrors?.content} />
           </div>
 
           <div className="min-h-[32px] px-4 pb-3 pt-1">
@@ -149,10 +165,11 @@ export default function NoteEdit() {
         </div>
       </div>
       <div className={floatingToolbarClassName}>
-        <Button type="reset" variant={'secondary'}>
+        <Button form={formId} type="reset" variant={'secondary'}>
           Reset
         </Button>
         <StatusButton
+          form={formId}
           type="submit"
           disabled={isSubmitting}
           status={isSubmitting ? 'pending' : 'idle'}
