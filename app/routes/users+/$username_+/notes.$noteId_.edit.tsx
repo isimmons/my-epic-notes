@@ -3,8 +3,9 @@ import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
+import { useHydrated, useIsSubmitting } from '~/hooks';
 import { db } from '~/utils/db.server';
-import { invariantResponse, useIsSubmitting } from '~/utils/misc';
+import { invariantResponse } from '~/utils/misc';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -106,9 +107,10 @@ export default function NoteEdit() {
   const formErrors =
     actionData?.status === 'error' ? actionData.errors.formErrors : null;
 
+  const isHydrated = useHydrated();
   return (
     <Form
-      noValidate
+      noValidate={isHydrated}
       id={formId}
       action=""
       method="post"
