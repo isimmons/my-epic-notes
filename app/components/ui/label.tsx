@@ -5,7 +5,7 @@ import { forwardRef } from 'react';
 import { cn } from '~/utils/misc.tsx';
 
 const labelVariants = cva(
-  'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  'text-sm md:text-lg font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
 );
 
 const Label = forwardRef<

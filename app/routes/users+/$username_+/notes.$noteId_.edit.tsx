@@ -61,27 +61,21 @@ export default function NoteEdit() {
   return (
     <div className="absolute inset-0 flex flex-col pt-12 px-5 ">
       <Form action="" method="post">
-        <Label htmlFor="title" className="text-sm md:text-lg">
-          Title
-        </Label>
+        <Label htmlFor="title">Title</Label>
         <Input
           name="title"
           type="text"
           defaultValue={title}
           required
           maxLength={100}
-          className="text-sm md:text-lg"
         />
-        <Label htmlFor="content" className="text-sm md:text-lg">
-          Content
-        </Label>
+        <Label htmlFor="content">Content</Label>
         <Textarea
           name="content"
           id="content"
           defaultValue={content}
           required
           maxLength={10_000}
-          className="whitespace-break-spaces text-sm md:text-lg"
         />
         <div className={floatingToolbarClassName}>
           <Button type="reset" variant={'secondary'}>
