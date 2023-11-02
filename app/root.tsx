@@ -3,7 +3,6 @@ import { cssBundleHref } from '@remix-run/css-bundle';
 import { json, type MetaFunction, type LinksFunction } from '@remix-run/node';
 import { Link, Outlet, useLoaderData } from '@remix-run/react';
 import tailwind from '~/styles/tailwind.css';
-import './styles/global.css';
 import { getEnv } from './utils/env.server';
 import Document from './components/document';
 import { GeneralErrorBoundary } from './components/error-boundary';
