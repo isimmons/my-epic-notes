@@ -1,6 +1,6 @@
 import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
-import { useId } from 'react';
+import { useId, useState, useEffect } from 'react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
@@ -85,16 +85,31 @@ export async function action({ request, params }: DataFunctionArgs) {
 }
 
 export default function NoteEdit() {
+  const [fieldErrors, setFieldErrors] = useState<{
+    title: Array<string>;
+    content: Array<string>;
+  } | null>(null);
+  const [formErrors, setFormErrors] = useState<Array<string> | null>(null);
+  const actionData = useActionData<typeof action>();
+
+  useEffect(() => {
+    setFieldErrors(
+      actionData?.status === 'error' ? actionData.errors.fieldErrors : null,
+    );
+    setFormErrors(
+      actionData?.status === 'error' ? actionData.errors.formErrors : null,
+    );
+  }, [actionData]);
+
+  const clearErrors = () => {
+    setFieldErrors(null);
+    setFormErrors(null);
+  };
+
   const {
     note: { title, content },
   } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
-
-  const fieldErrors =
-    actionData?.status === 'error' ? actionData.errors.fieldErrors : null;
-  const formErrors =
-    actionData?.status === 'error' ? actionData.errors.formErrors : null;
 
   const formId = 'note-editor';
   const formHasErrors = !!formErrors?.length;
@@ -157,7 +172,12 @@ export default function NoteEdit() {
         </div>
       </div>
       <div className={floatingToolbarClassName}>
-        <Button form={formId} type="reset" variant={'secondary'}>
+        <Button
+          form={formId}
+          type="reset"
+          onClick={clearErrors}
+          variant={'secondary'}
+        >
           Reset
         </Button>
         <StatusButton
