@@ -7,6 +7,7 @@ import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useHydrated, useIsSubmitting } from '~/hooks';
 import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
+import ErrorList from './_components/ErrorList';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -81,24 +82,6 @@ export async function action({ request, params }: DataFunctionArgs) {
   });
 
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
-}
-
-function ErrorList({
-  id,
-  errors,
-}: {
-  id?: string;
-  errors?: Array<string> | null;
-}) {
-  if (!errors || errors.length < 1) return null;
-
-  return (
-    <ul id={id} className="flex flex-col gap-1 text-sm text-red-600 italic">
-      {errors.map((error, i) => (
-        <li key={i}>{error}</li>
-      ))}
-    </ul>
-  );
 }
 
 export default function NoteEdit() {
