@@ -107,16 +107,23 @@ export default function NoteEdit() {
   } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
-  const formId = 'note-editor';
-  const titleId = useId();
-  const titleErrorsId = useId();
-  const contentId = useId();
-  const contentErrorsId = useId();
 
   const fieldErrors =
     actionData?.status === 'error' ? actionData.errors.fieldErrors : null;
   const formErrors =
     actionData?.status === 'error' ? actionData.errors.formErrors : null;
+
+  const formId = 'note-editor';
+  const formHasErrors = !!formErrors?.length;
+  const formErrorsId = useId();
+
+  const titleId = useId();
+  const titleHasErrors = !!fieldErrors?.title.length;
+  const titleErrorsId = useId();
+
+  const contentId = useId();
+  const contentHasErrors = !!fieldErrors?.content.length;
+  const contentErrorsId = useId();
 
   const isHydrated = useHydrated();
   return (
@@ -125,6 +132,8 @@ export default function NoteEdit() {
       id={formId}
       action=""
       method="post"
+      aria-invalid={formHasErrors || undefined}
+      aria-describedby={formHasErrors ? formErrorsId : undefined}
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
     >
       <div className="flex flex-col gap-1">
@@ -137,8 +146,8 @@ export default function NoteEdit() {
             defaultValue={title}
             required
             maxLength={100}
-            aria-invalid={fieldErrors?.title.length ? true : false}
-            aria-describedby={titleErrorsId}
+            aria-invalid={titleHasErrors || undefined}
+            aria-describedby={titleHasErrors ? titleErrorsId : undefined}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
             <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
@@ -152,15 +161,15 @@ export default function NoteEdit() {
             defaultValue={content}
             required
             maxLength={10_000}
-            aria-invalid={fieldErrors?.content.length ? true : false}
-            aria-describedby={contentErrorsId}
+            aria-invalid={contentHasErrors || undefined}
+            aria-describedby={contentHasErrors ? contentErrorsId : undefined}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
             <ErrorList id={contentErrorsId} errors={fieldErrors?.content} />
           </div>
 
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList errors={formErrors} />
+            <ErrorList id={formErrorsId} errors={formErrors} />
           </div>
         </div>
       </div>
