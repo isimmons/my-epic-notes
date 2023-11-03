@@ -1,6 +1,6 @@
 import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
-import { useId, useState, useEffect } from 'react';
+import { useId, useState, useEffect, useRef } from 'react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
@@ -91,15 +91,7 @@ export default function NoteEdit() {
   } | null>(null);
   const [formErrors, setFormErrors] = useState<Array<string> | null>(null);
   const actionData = useActionData<typeof action>();
-
-  useEffect(() => {
-    setFieldErrors(
-      actionData?.status === 'error' ? actionData.errors.fieldErrors : null,
-    );
-    setFormErrors(
-      actionData?.status === 'error' ? actionData.errors.formErrors : null,
-    );
-  }, [actionData]);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const clearErrors = () => {
     setFieldErrors(null);
@@ -124,6 +116,28 @@ export default function NoteEdit() {
   const contentErrorsId = useId();
 
   const isHydrated = useHydrated();
+
+  useEffect(() => {
+    setFieldErrors(
+      actionData?.status === 'error' ? actionData.errors.fieldErrors : null,
+    );
+    setFormErrors(
+      actionData?.status === 'error' ? actionData.errors.formErrors : null,
+    );
+  }, [actionData]);
+
+  useEffect(() => {
+    const formEl = formRef.current;
+    if (!formEl) return;
+    if (titleHasErrors) {
+      const el = formEl?.querySelector(`#${CSS.escape(titleId)}`);
+      if (el instanceof HTMLElement) el.focus();
+    } else if (contentHasErrors) {
+      const el = formRef.current?.querySelector(`#${CSS.escape(contentId)}`);
+      if (el instanceof HTMLElement) el.focus();
+    }
+  }, [titleHasErrors, contentHasErrors, titleId, contentId]);
+
   return (
     <Form
       noValidate={isHydrated}
@@ -132,6 +146,8 @@ export default function NoteEdit() {
       method="post"
       aria-invalid={formHasErrors || undefined}
       aria-describedby={formHasErrors ? formErrorsId : undefined}
+      ref={formRef}
+      tabIndex={-1}
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
     >
       <div className="flex flex-col gap-1">
@@ -146,6 +162,7 @@ export default function NoteEdit() {
             maxLength={100}
             aria-invalid={titleHasErrors || undefined}
             aria-describedby={titleHasErrors ? titleErrorsId : undefined}
+            autoFocus
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
             <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
