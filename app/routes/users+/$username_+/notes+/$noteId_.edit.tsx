@@ -14,6 +14,7 @@ import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import ErrorList from './_components/ErrorList';
 import { useFocusInvalid } from '~/hooks/useFocusInvalid';
+import { z } from 'zod';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -31,56 +32,45 @@ export async function loader({ params }: DataFunctionArgs) {
   });
 }
 
-type ActionErrors = {
-  formErrors: Array<string>;
-  fieldErrors: {
-    title: Array<string>;
-    content: Array<string>;
-  };
-};
-
 const titleMaxLength = 100;
+const titleMinLength = 5;
 const contentMaxLength = 10_000;
+const contentMinLength = 5;
+
+const NoteEditorSchema = z.object({
+  title: z
+    .string()
+    .min(titleMinLength, {
+      message: `Title must be at least ${titleMinLength} characters`,
+    })
+    .max(titleMaxLength, {
+      message: `Title can not be more than ${titleMaxLength} characters`,
+    }),
+  content: z
+    .string()
+    .min(contentMinLength, {
+      message: `Content must be at least ${contentMinLength} characters`,
+    })
+    .max(contentMaxLength, {
+      message: `Content can not be more than ${contentMaxLength} characters`,
+    }),
+});
 
 export async function action({ request, params }: DataFunctionArgs) {
-  const body = await request.formData();
-  const title = body.get('title');
-  const content = body.get('content');
+  invariantResponse(params.noteId, 'noteId param is required');
+  const formData = await request.formData();
 
-  invariantResponse(typeof title === 'string', 'title must be of type string');
-  invariantResponse(
-    typeof content === 'string',
-    'content must be of type string',
-  );
+  const result = NoteEditorSchema.safeParse({
+    title: formData.get('title'),
+    content: formData.get('content'),
+  });
 
-  const errors: ActionErrors = {
-    formErrors: [],
-    fieldErrors: {
-      title: [],
-      content: [],
-    },
-  };
+  if (!result.success)
+    return json({ status: 'error', errors: result.error.flatten() } as const, {
+      status: 400,
+    });
 
-  if (title === '') errors.fieldErrors.title.push('Title is required');
-  if (title.length > titleMaxLength)
-    errors.fieldErrors.title.push(
-      `Title must be ${titleMaxLength} characters or less`,
-    );
-
-  if (content === '') errors.fieldErrors.content.push('Content is required');
-  if (content.length > contentMaxLength)
-    errors.fieldErrors.content.push(
-      `Content must be ${contentMaxLength} characters or less`,
-    );
-
-  const hasErrors =
-    errors.formErrors.length > 0 ||
-    Object.values(errors.fieldErrors).some(
-      fieldErrors => fieldErrors.length > 0,
-    );
-
-  if (hasErrors)
-    return json({ status: 'error', errors } as const, { status: 400 });
+  const { title, content } = result.data;
 
   db.note.update({
     where: { id: { equals: params.noteId } },
@@ -107,11 +97,11 @@ export default function NoteEdit() {
   const formErrorsId = useId();
 
   const titleId = useId();
-  const titleHasErrors = !!errors?.fieldErrors.title.length;
+  const titleHasErrors = !!errors?.fieldErrors.title?.length;
   const titleErrorsId = useId();
 
   const contentId = useId();
-  const contentHasErrors = !!errors?.fieldErrors.content.length;
+  const contentHasErrors = !!errors?.fieldErrors.content?.length;
   const contentErrorsId = useId();
   const formIsFresh = !formHasErrors && !titleHasErrors && !contentHasErrors;
   const isHydrated = useHydrated();
@@ -156,7 +146,7 @@ export default function NoteEdit() {
             type="text"
             defaultValue={title}
             required
-            maxLength={100}
+            maxLength={titleMaxLength}
             aria-invalid={titleHasErrors || undefined}
             aria-describedby={titleHasErrors ? titleErrorsId : undefined}
             autoFocus
