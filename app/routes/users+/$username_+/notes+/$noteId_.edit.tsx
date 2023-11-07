@@ -1,6 +1,11 @@
 import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
-import { Form, useActionData, useLoaderData } from '@remix-run/react';
-import { useId, useState, useEffect, useRef } from 'react';
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useRevalidator,
+} from '@remix-run/react';
+import { useEffect, useId, useRef } from 'react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
@@ -8,6 +13,7 @@ import { useHydrated, useIsSubmitting } from '~/hooks';
 import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import ErrorList from './_components/ErrorList';
+import { useFocusInvalid } from '~/hooks/useFocusInvalid';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -85,18 +91,11 @@ export async function action({ request, params }: DataFunctionArgs) {
 }
 
 export default function NoteEdit() {
-  const [fieldErrors, setFieldErrors] = useState<{
-    title: Array<string>;
-    content: Array<string>;
-  } | null>(null);
-  const [formErrors, setFormErrors] = useState<Array<string> | null>(null);
-  const actionData = useActionData<typeof action>();
+  const revalidator = useRevalidator();
   const formRef = useRef<HTMLFormElement>(null);
-
-  const clearErrors = () => {
-    setFieldErrors(null);
-    setFormErrors(null);
-  };
+  const titleRef = useRef<HTMLInputElement>(null);
+  const actionData = useActionData<typeof action>();
+  const errors = actionData?.errors;
 
   const {
     note: { title, content },
@@ -104,39 +103,36 @@ export default function NoteEdit() {
   const isSubmitting = useIsSubmitting();
 
   const formId = 'note-editor';
-  const formHasErrors = !!formErrors?.length;
+  const formHasErrors = !!errors?.formErrors.length;
   const formErrorsId = useId();
 
   const titleId = useId();
-  const titleHasErrors = !!fieldErrors?.title.length;
+  const titleHasErrors = !!errors?.fieldErrors.title.length;
   const titleErrorsId = useId();
 
   const contentId = useId();
-  const contentHasErrors = !!fieldErrors?.content.length;
+  const contentHasErrors = !!errors?.fieldErrors.content.length;
   const contentErrorsId = useId();
-
+  const formIsFresh = !formHasErrors && !titleHasErrors && !contentHasErrors;
   const isHydrated = useHydrated();
 
-  useEffect(() => {
-    setFieldErrors(
-      actionData?.status === 'error' ? actionData.errors.fieldErrors : null,
-    );
-    setFormErrors(
-      actionData?.status === 'error' ? actionData.errors.formErrors : null,
-    );
-  }, [actionData]);
+  const clearErrors = () => {
+    if (revalidator.state === 'idle') {
+      revalidator.revalidate();
+    }
+  };
+
+  useFocusInvalid(formRef.current, [
+    formHasErrors,
+    titleHasErrors,
+    contentHasErrors,
+  ]);
 
   useEffect(() => {
-    const formEl = formRef.current;
-    if (!formEl) return;
-    if (titleHasErrors) {
-      const el = formEl?.querySelector(`#${CSS.escape(titleId)}`);
-      if (el instanceof HTMLElement) el.focus();
-    } else if (contentHasErrors) {
-      const el = formRef.current?.querySelector(`#${CSS.escape(contentId)}`);
-      if (el instanceof HTMLElement) el.focus();
-    }
-  }, [titleHasErrors, contentHasErrors, titleId, contentId]);
+    if (!formIsFresh) return;
+
+    titleRef.current?.focus();
+  }, [formIsFresh]);
 
   return (
     <Form
@@ -154,6 +150,7 @@ export default function NoteEdit() {
         <div>
           <Label htmlFor={titleId}>Title</Label>
           <Input
+            ref={titleRef}
             id={titleId}
             name="title"
             type="text"
@@ -165,7 +162,7 @@ export default function NoteEdit() {
             autoFocus
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
+            <ErrorList id={titleErrorsId} errors={errors?.fieldErrors.title} />
           </div>
         </div>
         <div>
@@ -180,11 +177,14 @@ export default function NoteEdit() {
             aria-describedby={contentHasErrors ? contentErrorsId : undefined}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={contentErrorsId} errors={fieldErrors?.content} />
+            <ErrorList
+              id={contentErrorsId}
+              errors={errors?.fieldErrors.content}
+            />
           </div>
 
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={formErrorsId} errors={formErrors} />
+            <ErrorList id={formErrorsId} errors={errors?.formErrors} />
           </div>
         </div>
       </div>
