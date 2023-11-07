@@ -15,6 +15,7 @@ import { invariantResponse } from '~/utils/misc';
 import ErrorList from './_components/ErrorList';
 import { useFocusInvalid } from '~/hooks/useFocusInvalid';
 import { z } from 'zod';
+import { parse } from '@conform-to/zod';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -39,7 +40,7 @@ const contentMinLength = 5;
 
 const NoteEditorSchema = z.object({
   title: z
-    .string()
+    .string({ required_error: 'A note must have a title' })
     .min(titleMinLength, {
       message: `Title must be at least ${titleMinLength} characters`,
     })
@@ -47,7 +48,7 @@ const NoteEditorSchema = z.object({
       message: `Title can not be more than ${titleMaxLength} characters`,
     }),
   content: z
-    .string()
+    .string({ required_error: 'A note should have some content' })
     .min(contentMinLength, {
       message: `Content must be at least ${contentMinLength} characters`,
     })
@@ -60,17 +61,14 @@ export async function action({ request, params }: DataFunctionArgs) {
   invariantResponse(params.noteId, 'noteId param is required');
   const formData = await request.formData();
 
-  const result = NoteEditorSchema.safeParse({
-    title: formData.get('title'),
-    content: formData.get('content'),
-  });
+  const submission = parse(formData, { schema: NoteEditorSchema });
 
-  if (!result.success)
-    return json({ status: 'error', errors: result.error.flatten() } as const, {
+  if (!submission.value)
+    return json({ status: 'error', errors: submission } as const, {
       status: 400,
     });
 
-  const { title, content } = result.data;
+  const { title, content } = submission.value;
 
   db.note.update({
     where: { id: { equals: params.noteId } },
@@ -85,7 +83,14 @@ export default function NoteEdit() {
   const formRef = useRef<HTMLFormElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const actionData = useActionData<typeof action>();
-  const errors = actionData?.errors;
+  // const error = actionData?.errors.error;
+
+  const fieldErrors =
+    actionData?.status === 'error' ? actionData.errors.error : null;
+  // 🐨 instead of actionData.errors.formErrors, we'll use actionData.submission.error['']
+  // (Yeah, it's weird and will change... https://github.com/edmundhung/conform/issues/211)
+  const formErrors =
+    actionData?.status === 'error' ? actionData.errors.error[''] : null;
 
   const {
     note: { title, content },
@@ -93,15 +98,15 @@ export default function NoteEdit() {
   const isSubmitting = useIsSubmitting();
 
   const formId = 'note-editor';
-  const formHasErrors = !!errors?.formErrors.length;
+  const formHasErrors = !!formErrors?.length;
   const formErrorsId = useId();
 
   const titleId = useId();
-  const titleHasErrors = !!errors?.fieldErrors.title?.length;
+  const titleHasErrors = !!fieldErrors?.title?.length;
   const titleErrorsId = useId();
 
   const contentId = useId();
-  const contentHasErrors = !!errors?.fieldErrors.content?.length;
+  const contentHasErrors = !!fieldErrors?.content?.length;
   const contentErrorsId = useId();
   const formIsFresh = !formHasErrors && !titleHasErrors && !contentHasErrors;
   const isHydrated = useHydrated();
@@ -152,7 +157,7 @@ export default function NoteEdit() {
             autoFocus
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={titleErrorsId} errors={errors?.fieldErrors.title} />
+            <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
           </div>
         </div>
         <div>
@@ -167,14 +172,11 @@ export default function NoteEdit() {
             aria-describedby={contentHasErrors ? contentErrorsId : undefined}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList
-              id={contentErrorsId}
-              errors={errors?.fieldErrors.content}
-            />
+            <ErrorList id={contentErrorsId} errors={fieldErrors?.content} />
           </div>
 
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={formErrorsId} errors={errors?.formErrors} />
+            <ErrorList id={formErrorsId} errors={formErrors} />
           </div>
         </div>
       </div>
