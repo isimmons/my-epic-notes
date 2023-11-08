@@ -1,6 +1,12 @@
 import { conform, useForm } from '@conform-to/react';
 import { parse, getFieldsetConstraint } from '@conform-to/zod';
-import { json, redirect, type DataFunctionArgs } from '@remix-run/node';
+import {
+  unstable_createMemoryUploadHandler as createMemoryUploadHandler,
+  json,
+  unstable_parseMultipartFormData as parseMultipartFormData,
+  redirect,
+  type DataFunctionArgs,
+} from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -8,9 +14,9 @@ import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useIsSubmitting } from '~/hooks';
-import { db } from '~/utils/db.server';
+import { db, updateNote } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
-import ErrorList from './_components/ErrorList';
+import { ErrorList, ImageChooser } from './_components';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -24,7 +30,11 @@ export async function loader({ params }: DataFunctionArgs) {
   invariantResponse(note, 'Note not found', { status: 404 });
 
   return json({
-    note: { title: note.title, content: note.content },
+    note: {
+      title: note.title,
+      content: note.content,
+      images: note.images.map(i => ({ id: i.id, altText: i.altText })),
+    },
   });
 }
 
@@ -32,6 +42,7 @@ const titleMaxLength = 100;
 const titleMinLength = 5;
 const contentMaxLength = 10_000;
 const contentMinLength = 5;
+const MAX_UPLOAD_SIZE = 1024 * 1024 * 3; // 3MB
 
 const NoteEditorSchema = z.object({
   title: z
@@ -54,7 +65,11 @@ const NoteEditorSchema = z.object({
 
 export async function action({ request, params }: DataFunctionArgs) {
   invariantResponse(params.noteId, 'noteId param is required');
-  const formData = await request.formData();
+
+  const formData = await parseMultipartFormData(
+    request,
+    createMemoryUploadHandler({ maxPartSize: MAX_UPLOAD_SIZE }),
+  );
 
   const submission = parse(formData, { schema: NoteEditorSchema });
 
@@ -65,9 +80,21 @@ export async function action({ request, params }: DataFunctionArgs) {
 
   const { title, content } = submission.value;
 
-  db.note.update({
-    where: { id: { equals: params.noteId } },
-    data: { title, content },
+  await updateNote({
+    id: params.noteId,
+    title,
+    content,
+    images: [
+      {
+        // @ts-expect-error 🦺 we'll fix this in the next exercise
+        id: formData.get('imageId') ?? '',
+        // @ts-expect-error 🦺 we'll fix this in the next exercise
+
+        file: formData.get('file') ?? null,
+        // @ts-expect-error 🦺 we'll fix this in the next exercise
+        altText: formData.get('altText') ?? null,
+      },
+    ],
   });
 
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
@@ -77,7 +104,7 @@ export default function NoteEdit() {
   const [isReset, setIsReset] = useState(false);
   const actionData = useActionData<typeof action>();
   const {
-    note: { title, content },
+    note: { title, content, images },
   } = useLoaderData<typeof loader>();
   const titleRef = useRef<HTMLInputElement>(null);
   const isSubmitting = useIsSubmitting();
@@ -102,34 +129,43 @@ export default function NoteEdit() {
   }, [isReset]);
 
   return (
-    <Form
-      method="post"
-      className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
-      {...form.props}
-    >
-      <div className="flex flex-col gap-1">
-        <div>
-          <Label htmlFor={fields.title.id}>Title</Label>
-          <Input ref={titleRef} autoFocus {...conform.input(fields.title)} />
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={fields.title.errorId} errors={fields.title.errors} />
+    <div className="absolute inset-0">
+      <Form
+        method="post"
+        className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
+        {...form.props}
+        encType="multipart/form-data"
+      >
+        <div className="flex flex-col gap-1">
+          <div>
+            <Label htmlFor={fields.title.id}>Title</Label>
+            <Input ref={titleRef} autoFocus {...conform.input(fields.title)} />
+            <div className="min-h-[32px] px-4 pb-3 pt-1">
+              <ErrorList
+                id={fields.title.errorId}
+                errors={fields.title.errors}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor={fields.content.id}>Content</Label>
+            <Textarea {...conform.textarea(fields.content)} />
+            <div className="min-h-[32px] px-4 pb-3 pt-1">
+              <ErrorList
+                id={fields.content.errorId}
+                errors={fields.content.errors}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Image</Label>
+            <ImageChooser image={images[0]} />
           </div>
         </div>
-        <div>
-          <Label htmlFor={fields.content.id}>Content</Label>
-          <Textarea {...conform.textarea(fields.content)} />
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList
-              id={fields.content.errorId}
-              errors={fields.content.errors}
-            />
-          </div>
-
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={form.errorId} errors={form.errors} />
-          </div>
+        <div className="min-h-[32px] px-4 pb-3 pt-1">
+          <ErrorList id={form.errorId} errors={form.errors} />
         </div>
-      </div>
+      </Form>
       <div className={floatingToolbarClassName}>
         <Button
           form={form.id}
@@ -148,7 +184,7 @@ export default function NoteEdit() {
           Submit
         </StatusButton>
       </div>
-    </Form>
+    </div>
   );
 }
 

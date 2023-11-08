@@ -11,7 +11,7 @@ import { Button } from '~/components/ui/button';
 import { db } from '~/utils/db.server';
 import { assertDefined } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
-import { type NotesLoader } from './notes';
+import { type NotesLoader } from './_notes';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -27,6 +27,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     note: {
       title: note.title,
       content: note.content,
+      images: note.images.map(i => ({ id: i.id, altText: i.altText })),
     },
   });
 }
@@ -88,13 +89,26 @@ export default function NoteRoute() {
   const data = useLoaderData<typeof loader>();
 
   const {
-    note: { title, content },
+    note: { title, content, images },
   } = data;
 
   return (
     <div className="absolute inset-0 flex flex-col px-10">
       <h2 className="mb-2 pt-12 text-h2 lg:mb-6">{title}</h2>
       <div className="overflow-y-auto pb-24">
+        <ul className="flex flex-wrap gap-5 py-5">
+          {images.map(image => (
+            <li key={image.id}>
+              <a href={`/resources/images/${image.id}`}>
+                <img
+                  src={`/resources/images/${image.id}`}
+                  alt={image.altText ?? ''}
+                  className="h-32 w-32 rounded-lg object-cover"
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
         <p className="whitespace-break-spaces text-sm md:text-lg">{content}</p>
       </div>
       <div className={floatingToolbarClassName}>
