@@ -1,18 +1,13 @@
-import { parse } from '@conform-to/zod';
+import { conform, useForm } from '@conform-to/react';
+import { parse, getFieldsetConstraint } from '@conform-to/zod';
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node';
-import {
-  Form,
-  useActionData,
-  useLoaderData,
-  useRevalidator,
-} from '@remix-run/react';
-import { useEffect, useId, useRef } from 'react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
+import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
-import { useHydrated, useIsSubmitting } from '~/hooks';
-import { useFocusInvalid } from '~/hooks/useFocusInvalid';
+import { useIsSubmitting } from '~/hooks';
 import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import ErrorList from './_components/ErrorList';
@@ -79,115 +74,73 @@ export async function action({ request, params }: DataFunctionArgs) {
 }
 
 export default function NoteEdit() {
-  const revalidator = useRevalidator();
-  const formRef = useRef<HTMLFormElement>(null);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const [isReset, setIsReset] = useState(false);
   const actionData = useActionData<typeof action>();
-  const submission = actionData?.submission;
-
-  const fieldErrors = actionData?.status === 'error' ? submission?.error : null;
-  const formErrors =
-    actionData?.status === 'error' ? submission?.error[''] : null;
-
   const {
     note: { title, content },
   } = useLoaderData<typeof loader>();
+  const titleRef = useRef<HTMLInputElement>(null);
   const isSubmitting = useIsSubmitting();
 
-  const formId = 'note-editor';
-  const formHasErrors = !!formErrors?.length;
-  const formErrorsId = useId();
-
-  const titleId = useId();
-  const titleHasErrors = !!fieldErrors?.title?.length;
-  const titleErrorsId = useId();
-
-  const contentId = useId();
-  const contentHasErrors = !!fieldErrors?.content?.length;
-  const contentErrorsId = useId();
-  const formIsFresh = !formHasErrors && !titleHasErrors && !contentHasErrors;
-  const isHydrated = useHydrated();
-
-  const clearErrors = () => {
-    if (revalidator.state === 'idle') {
-      revalidator.revalidate();
-    }
-  };
-
-  useFocusInvalid(formRef.current, [
-    formHasErrors,
-    titleHasErrors,
-    contentHasErrors,
-  ]);
+  const [form, fields] = useForm({
+    id: 'note-editor',
+    constraint: getFieldsetConstraint(NoteEditorSchema),
+    lastSubmission: actionData?.submission,
+    onValidate({ formData }) {
+      return parse(formData, { schema: NoteEditorSchema });
+    },
+    shouldValidate: 'onBlur',
+    defaultValue: { title, content },
+  });
 
   useEffect(() => {
-    if (!formIsFresh) return;
+    // refocus first input on form reset
+    if (!isReset) return;
 
     titleRef.current?.focus();
-  }, [formIsFresh]);
+    setIsReset(false);
+  }, [isReset]);
 
   return (
     <Form
-      noValidate={isHydrated}
-      id={formId}
-      action=""
       method="post"
-      aria-invalid={formHasErrors || undefined}
-      aria-describedby={formHasErrors ? formErrorsId : undefined}
-      ref={formRef}
-      tabIndex={-1}
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
+      {...form.props}
     >
       <div className="flex flex-col gap-1">
         <div>
-          <Label htmlFor={titleId}>Title</Label>
-          <Input
-            ref={titleRef}
-            id={titleId}
-            name="title"
-            type="text"
-            defaultValue={title}
-            required
-            maxLength={titleMaxLength}
-            aria-invalid={titleHasErrors || undefined}
-            aria-describedby={titleHasErrors ? titleErrorsId : undefined}
-            autoFocus
-          />
+          <Label htmlFor={fields.title.id}>Title</Label>
+          <Input ref={titleRef} autoFocus {...conform.input(fields.title)} />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={titleErrorsId} errors={fieldErrors?.title} />
+            <ErrorList id={fields.title.errorId} errors={fields.title.errors} />
           </div>
         </div>
         <div>
-          <Label htmlFor={contentId}>Content</Label>
-          <Textarea
-            id={contentId}
-            name="content"
-            defaultValue={content}
-            required
-            maxLength={10_000}
-            aria-invalid={contentHasErrors || undefined}
-            aria-describedby={contentHasErrors ? contentErrorsId : undefined}
-          />
+          <Label htmlFor={fields.content.id}>Content</Label>
+          <Textarea {...conform.textarea(fields.content)} />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={contentErrorsId} errors={fieldErrors?.content} />
+            <ErrorList
+              id={fields.content.errorId}
+              errors={fields.content.errors}
+            />
           </div>
 
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={formErrorsId} errors={formErrors} />
+            <ErrorList id={form.errorId} errors={form.errors} />
           </div>
         </div>
       </div>
       <div className={floatingToolbarClassName}>
         <Button
-          form={formId}
+          form={form.id}
           type="reset"
-          onClick={clearErrors}
+          onClick={() => setIsReset(true)}
           variant={'secondary'}
         >
           Reset
         </Button>
         <StatusButton
-          form={formId}
+          form={form.id}
           type="submit"
           disabled={isSubmitting}
           status={isSubmitting ? 'pending' : 'idle'}
