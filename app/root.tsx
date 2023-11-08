@@ -4,7 +4,7 @@ import { json, type MetaFunction, type LinksFunction } from '@remix-run/node';
 import { Link, Outlet, useLoaderData } from '@remix-run/react';
 import tailwind from '~/styles/tailwind.css';
 import { getEnv } from './utils/env.server';
-import Document from './components/document';
+import Document from './document';
 import { GeneralErrorBoundary } from './components/error-boundary';
 
 export const links: LinksFunction = () => [
