@@ -185,13 +185,12 @@ export async function updateNote({
     }) ?? [];
 
   const noteImages = await Promise.all(noteImagePromises);
+
   db.note.update({
     where: { id: { equals: id } },
     data: {
       title,
       content,
-      // TODO: figure this out
-      // @ts-expect-error
       images: noteImages.filter(Boolean),
     },
   });
