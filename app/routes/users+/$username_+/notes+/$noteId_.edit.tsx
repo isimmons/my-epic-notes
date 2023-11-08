@@ -1,4 +1,5 @@
-import { json, type DataFunctionArgs, redirect } from '@remix-run/node';
+import { parse } from '@conform-to/zod';
+import { json, redirect, type DataFunctionArgs } from '@remix-run/node';
 import {
   Form,
   useActionData,
@@ -6,16 +7,15 @@ import {
   useRevalidator,
 } from '@remix-run/react';
 import { useEffect, useId, useRef } from 'react';
+import { z } from 'zod';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useHydrated, useIsSubmitting } from '~/hooks';
+import { useFocusInvalid } from '~/hooks/useFocusInvalid';
 import { db } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import ErrorList from './_components/ErrorList';
-import { useFocusInvalid } from '~/hooks/useFocusInvalid';
-import { z } from 'zod';
-import { parse } from '@conform-to/zod';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -64,7 +64,7 @@ export async function action({ request, params }: DataFunctionArgs) {
   const submission = parse(formData, { schema: NoteEditorSchema });
 
   if (!submission.value)
-    return json({ status: 'error', errors: submission } as const, {
+    return json({ status: 'error', submission } as const, {
       status: 400,
     });
 
@@ -83,14 +83,11 @@ export default function NoteEdit() {
   const formRef = useRef<HTMLFormElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const actionData = useActionData<typeof action>();
-  // const error = actionData?.errors.error;
+  const submission = actionData?.submission;
 
-  const fieldErrors =
-    actionData?.status === 'error' ? actionData.errors.error : null;
-  // 🐨 instead of actionData.errors.formErrors, we'll use actionData.submission.error['']
-  // (Yeah, it's weird and will change... https://github.com/edmundhung/conform/issues/211)
+  const fieldErrors = actionData?.status === 'error' ? submission?.error : null;
   const formErrors =
-    actionData?.status === 'error' ? actionData.errors.error[''] : null;
+    actionData?.status === 'error' ? submission?.error[''] : null;
 
   const {
     note: { title, content },
