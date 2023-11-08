@@ -43,6 +43,12 @@ const titleMinLength = 5;
 const contentMaxLength = 10_000;
 const contentMinLength = 5;
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 3; // 3MB
+const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+];
 
 const NoteEditorSchema = z.object({
   title: z
@@ -61,6 +67,19 @@ const NoteEditorSchema = z.object({
     .max(contentMaxLength, {
       message: `Content can not be more than ${contentMaxLength} characters`,
     }),
+  imageId: z.string().optional(),
+  file: z
+    .instanceof(File)
+    .optional()
+    .refine(
+      file => file?.size && file.size <= MAX_UPLOAD_SIZE,
+      `Max file size is ${MAX_UPLOAD_SIZE} KB.`,
+    )
+    .refine(
+      file => file?.size && ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      '.jpg, .jpeg, .png and .webp files are accepted.',
+    ),
+  altText: z.string().optional(),
 });
 
 export async function action({ request, params }: DataFunctionArgs) {
@@ -78,23 +97,13 @@ export async function action({ request, params }: DataFunctionArgs) {
       status: 400,
     });
 
-  const { title, content } = submission.value;
+  const { title, content, imageId, file, altText } = submission.value;
 
   await updateNote({
     id: params.noteId,
     title,
     content,
-    images: [
-      {
-        // @ts-expect-error 🦺 we'll fix this in the next exercise
-        id: formData.get('imageId') ?? '',
-        // @ts-expect-error 🦺 we'll fix this in the next exercise
-
-        file: formData.get('file') ?? null,
-        // @ts-expect-error 🦺 we'll fix this in the next exercise
-        altText: formData.get('altText') ?? null,
-      },
-    ],
+    images: [{ id: imageId, file, altText }],
   });
 
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
