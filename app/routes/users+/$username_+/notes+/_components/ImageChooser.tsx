@@ -12,6 +12,7 @@ type ImageChooserProps = {
 const ImageChooser = ({ config }: ImageChooserProps) => {
   const fieldsetRef = useRef<HTMLFieldSetElement>(null);
   const fields = useFieldset(fieldsetRef, config);
+  const fieldsetConfig = { ...config, name: config.name as string };
 
   const existingImage = Boolean(fields.id.defaultValue);
   const [previewImage, setPreviewImage] = useState<string | null>(
@@ -20,7 +21,7 @@ const ImageChooser = ({ config }: ImageChooserProps) => {
   const [altText, setAltText] = useState(fields.altText.defaultValue ?? '');
 
   return (
-    <fieldset ref={fieldsetRef}>
+    <fieldset ref={fieldsetRef} {...conform.fieldset(fieldsetConfig)}>
       <div className="flex gap-3">
         <div className="w-32">
           <div className="relative h-32 w-32">
