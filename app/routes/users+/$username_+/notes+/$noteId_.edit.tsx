@@ -167,7 +167,6 @@ export default function NoteEdit() {
             </div>
           </div>
           <div>
-            <Label>Image</Label>
             <ImageChooser image={images[0]} />
           </div>
         </div>

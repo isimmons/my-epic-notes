@@ -19,7 +19,8 @@ const ImageChooser = ({
       <div className="flex gap-3">
         <div className="w-32">
           <div className="relative h-32 w-32">
-            <label
+            <Label className="block">Image</Label>
+            <Label
               htmlFor="image-input"
               className={cn('group absolute h-32 w-32 rounded-lg', {
                 'bg-accent opacity-40 focus-within:opacity-100 hover:opacity-100':
@@ -69,12 +70,13 @@ const ImageChooser = ({
                 type="file"
                 accept="image/*"
               />
-            </label>
+            </Label>
           </div>
         </div>
         <div className="flex-1">
           <Label htmlFor="alt-text">Alt Text</Label>
           <Textarea
+            className="min-h-[8rem]"
             id="alt-text"
             name="altText"
             defaultValue={altText}
