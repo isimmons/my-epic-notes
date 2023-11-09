@@ -1,27 +1,32 @@
+import { useFieldset, type FieldsetConfig, conform } from '@conform-to/react';
 import { Label } from '@radix-ui/react-label';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Textarea } from '~/components/ui';
+import { type ImageConfig } from '~/schemas';
 import { cn } from '~/utils/misc';
 
-const ImageChooser = ({
-  image,
-}: {
-  image?: { id: string; altText?: string | null };
-}) => {
-  const existingImage = Boolean(image);
+type ImageChooserProps = {
+  config: FieldsetConfig<ImageConfig>;
+};
+
+const ImageChooser = ({ config }: ImageChooserProps) => {
+  const fieldsetRef = useRef<HTMLFieldSetElement>(null);
+  const fields = useFieldset(fieldsetRef, config);
+
+  const existingImage = Boolean(fields.id.defaultValue);
   const [previewImage, setPreviewImage] = useState<string | null>(
-    existingImage ? `/resources/images/${image?.id}` : null,
+    existingImage ? `/resources/images/${fields.id.defaultValue}` : null,
   );
-  const [altText, setAltText] = useState(image?.altText ?? '');
+  const [altText, setAltText] = useState(fields.altText.defaultValue ?? '');
 
   return (
-    <fieldset>
+    <fieldset ref={fieldsetRef} {...conform.fieldset(config)}>
       <div className="flex gap-3">
         <div className="w-32">
           <div className="relative h-32 w-32">
             <Label className="block">Image</Label>
             <Label
-              htmlFor="image-input"
+              htmlFor={fields.file.id}
               className={cn('group absolute h-32 w-32 rounded-lg', {
                 'bg-accent opacity-40 focus-within:opacity-100 hover:opacity-100':
                   !previewImage,
@@ -47,10 +52,9 @@ const ImageChooser = ({
                 </div>
               )}
               {existingImage ? (
-                <input name="imageId" type="hidden" value={image?.id} />
+                <input {...conform.input(fields.id, { type: 'hidden' })} />
               ) : null}
               <input
-                id="image-input"
                 aria-label="Image"
                 className="absolute left-0 top-0 z-0 h-32 w-32 cursor-pointer opacity-0"
                 onChange={event => {
@@ -66,21 +70,18 @@ const ImageChooser = ({
                     setPreviewImage(null);
                   }
                 }}
-                name="file"
-                type="file"
                 accept="image/*"
+                {...conform.input(fields.file, { type: 'file' })}
               />
             </Label>
           </div>
         </div>
         <div className="flex-1">
-          <Label htmlFor="alt-text">Alt Text</Label>
+          <Label htmlFor={fields.altText.id}>Alt Text</Label>
           <Textarea
             className="min-h-[8rem]"
-            id="alt-text"
-            name="altText"
-            defaultValue={altText}
             onChange={e => setAltText(e.currentTarget.value)}
+            {...conform.textarea(fields.altText)}
           />
         </div>
       </div>
