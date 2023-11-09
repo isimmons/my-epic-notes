@@ -1,4 +1,4 @@
-import { conform, useForm } from '@conform-to/react';
+import { conform, useFieldList, useForm } from '@conform-to/react';
 import { parse, getFieldsetConstraint } from '@conform-to/zod';
 import {
   unstable_createMemoryUploadHandler as createMemoryUploadHandler,
@@ -53,13 +53,13 @@ export async function action({ request, params }: DataFunctionArgs) {
       status: 400,
     });
 
-  const { title, content, image } = submission.value;
+  const { title, content, images } = submission.value;
 
   await updateNote({
     id: params.noteId,
     title,
     content,
-    images: [image],
+    images,
   });
 
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
@@ -85,9 +85,11 @@ export default function NoteEdit() {
     defaultValue: {
       title,
       content,
-      image: images[0],
+      images: images.length ? images : [{}],
     },
   });
+
+  const imageList = useFieldList(form.ref, fields.images);
 
   useEffect(() => {
     // refocus first input on form reset
@@ -127,7 +129,13 @@ export default function NoteEdit() {
             </div>
           </div>
           <div>
-            <ImageChooser config={fields.image} />
+            <ul className="flex flex-col gap-4">
+              {imageList.map(image => (
+                <li key={image.key}>
+                  <ImageChooser config={image} />
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
         <div className="min-h-[32px] px-4 pb-3 pt-1">

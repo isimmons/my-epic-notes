@@ -47,7 +47,7 @@ const NoteEditorSchema = z.object({
     .max(contentMaxLength, {
       message: `Content can not be more than ${contentMaxLength} characters`,
     }),
-  image: ImageFieldsetSchema,
+  images: z.array(ImageFieldsetSchema),
 });
 
 export default NoteEditorSchema;
