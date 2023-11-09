@@ -20,7 +20,7 @@ const ImageChooser = ({ config }: ImageChooserProps) => {
   const [altText, setAltText] = useState(fields.altText.defaultValue ?? '');
 
   return (
-    <fieldset ref={fieldsetRef} {...conform.fieldset(config)}>
+    <fieldset ref={fieldsetRef}>
       <div className="flex gap-3">
         <div className="w-32">
           <div className="relative h-32 w-32">
