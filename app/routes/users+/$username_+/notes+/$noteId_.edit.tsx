@@ -38,50 +38,6 @@ export async function loader({ params }: DataFunctionArgs) {
   });
 }
 
-// const titleMaxLength = 100;
-// const titleMinLength = 5;
-// const contentMaxLength = 10_000;
-// const contentMinLength = 5;
-// const MAX_UPLOAD_SIZE = 1024 * 1024 * 3; // 3MB
-// const ACCEPTED_IMAGE_TYPES = [
-//   'image/jpeg',
-//   'image/jpg',
-//   'image/png',
-//   'image/webp',
-// ];
-
-// const NoteEditorSchema = z.object({
-//   title: z
-//     .string({ required_error: 'A note must have a title' })
-//     .min(titleMinLength, {
-//       message: `Title must be at least ${titleMinLength} characters`,
-//     })
-//     .max(titleMaxLength, {
-//       message: `Title can not be more than ${titleMaxLength} characters`,
-//     }),
-//   content: z
-//     .string({ required_error: 'A note should have some content' })
-//     .min(contentMinLength, {
-//       message: `Content must be at least ${contentMinLength} characters`,
-//     })
-//     .max(contentMaxLength, {
-//       message: `Content can not be more than ${contentMaxLength} characters`,
-//     }),
-//   imageId: z.string().optional(),
-//   file: z
-//     .instanceof(File)
-//     .optional()
-//     .refine(
-//       file => file?.size && file.size <= MAX_UPLOAD_SIZE,
-//       `Max file size is ${MAX_UPLOAD_SIZE} KB.`,
-//     )
-//     .refine(
-//       file => file?.size && ACCEPTED_IMAGE_TYPES.includes(file?.type),
-//       '.jpg, .jpeg, .png and .webp files are accepted.',
-//     ),
-//   altText: z.string().optional(),
-// });
-
 export async function action({ request, params }: DataFunctionArgs) {
   invariantResponse(params.noteId, 'noteId param is required');
 
@@ -112,7 +68,6 @@ export async function action({ request, params }: DataFunctionArgs) {
 export default function NoteEdit() {
   const [isReset, setIsReset] = useState(false);
   const actionData = useActionData<typeof action>();
-  // const data = useLoaderData<typeof loader>();
   const {
     note: { title, content, images },
   } = useLoaderData<typeof loader>();
