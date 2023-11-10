@@ -1,8 +1,6 @@
 import { Honeypot } from 'remix-utils/honeypot/server';
 
 export const honeypot = new Honeypot({
-  validFromFieldName: null,
-  // encryptionSeed: process.env.HONEY_POT_ENCRYPTION_SEED,
-  // nameFieldName: 'name',
-  // randomizeNameFieldName: true,
+  validFromFieldName: process.env.TESTING ? null : undefined,
+  encryptionSeed: process.env.HONEYPOT_SECRET,
 });
