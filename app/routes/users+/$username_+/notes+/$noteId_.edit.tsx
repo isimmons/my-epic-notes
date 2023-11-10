@@ -1,4 +1,4 @@
-import { conform, useFieldList, useForm } from '@conform-to/react';
+import { conform, list, useFieldList, useForm } from '@conform-to/react';
 import { parse, getFieldsetConstraint } from '@conform-to/zod';
 import {
   unstable_createMemoryUploadHandler as createMemoryUploadHandler,
@@ -47,6 +47,10 @@ export async function action({ request, params }: DataFunctionArgs) {
   );
 
   const submission = parse(formData, { schema: NoteEditorSchema });
+
+  if (submission.intent !== 'submit') {
+    return json({ status: 'idle', submission } as const);
+  }
 
   if (!submission.value)
     return json({ status: 'error', submission } as const, {
@@ -107,6 +111,9 @@ export default function NoteEdit() {
         {...form.props}
         encType="multipart/form-data"
       >
+        {/* Allows 'Enter' in text fields without triggering delete button */}
+        <button type="submit" className="hidden"></button>
+
         <div className="flex flex-col gap-1">
           <div>
             <Label htmlFor={fields.title.id}>Title</Label>
@@ -130,14 +137,32 @@ export default function NoteEdit() {
           </div>
           <div>
             <ul className="flex flex-col gap-4">
-              {imageList.map(image => (
-                <li key={image.key}>
+              {imageList.map((image, index) => (
+                <li
+                  key={image.key}
+                  className="relative pb-5 border-b-2 border-muted-foreground"
+                >
+                  <button
+                    {...list.remove(fields.images.name, { index })}
+                    className="text-foreground-destructive absolute right-0 top-0"
+                  >
+                    <span aria-hidden>❌</span>{' '}
+                    <span className="sr-only">Remove image {index + 1}</span>
+                  </button>
                   <ImageChooser config={image} />
                 </li>
               ))}
             </ul>
           </div>
+          <Button
+            className="mt-3"
+            {...list.insert(fields.images.name, { defaultValue: {} })}
+          >
+            <span aria-hidden>➕ Image</span>{' '}
+            <span className="sr-only">Add image</span>
+          </Button>
         </div>
+
         <div className="min-h-[32px] px-4 pb-3 pt-1">
           <ErrorList id={form.errorId} errors={form.errors} />
         </div>
