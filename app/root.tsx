@@ -1,6 +1,11 @@
 import os from 'node:os';
 import { cssBundleHref } from '@remix-run/css-bundle';
-import { json, type MetaFunction, type LinksFunction } from '@remix-run/node';
+import {
+  json,
+  type MetaFunction,
+  type LinksFunction,
+  type DataFunctionArgs,
+} from '@remix-run/node';
 import { Link, Outlet, useLoaderData } from '@remix-run/react';
 import tailwind from '~/styles/tailwind.css';
 import { getEnv } from './utils/env.server';
@@ -8,15 +13,27 @@ import Document from './document';
 import { GeneralErrorBoundary } from './components/error-boundary';
 import { honeypot } from './utils/honeypot.server';
 import { HoneypotProvider } from 'remix-utils/honeypot/react';
+import { csrf } from './utils/csrf.server';
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
 ];
 
-export async function loader() {
+export async function loader({ request }: DataFunctionArgs) {
   const honeyProps = honeypot.getInputProps();
+  const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
 
-  return json({ username: os.userInfo().username, ENV: getEnv(), honeyProps });
+  return json(
+    {
+      username: os.userInfo().username,
+      ENV: getEnv(),
+      honeyProps,
+      csrfToken,
+    },
+    {
+      headers: csrfCookieHeader ? { 'set-cookie': csrfCookieHeader } : {},
+    },
+  );
 }
 
 function App() {
