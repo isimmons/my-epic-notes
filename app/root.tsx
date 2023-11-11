@@ -14,6 +14,7 @@ import { GeneralErrorBoundary } from './components/error-boundary';
 import { honeypot } from './utils/honeypot.server';
 import { HoneypotProvider } from 'remix-utils/honeypot/react';
 import { csrf } from './utils/csrf.server';
+import { AuthenticityTokenProvider } from 'remix-utils/csrf/react';
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -75,11 +76,13 @@ function App() {
 
 export default function AppWithProviders() {
   const data = useLoaderData<typeof loader>();
-
+  // TODO: lookup dealing with multiple providers. Remember nice solution in one of old projects
   return (
-    <HoneypotProvider {...data.honeyProps}>
-      <App />
-    </HoneypotProvider>
+    <AuthenticityTokenProvider token={data.csrfToken}>
+      <HoneypotProvider {...data.honeyProps}>
+        <App />
+      </HoneypotProvider>
+    </AuthenticityTokenProvider>
   );
 }
 

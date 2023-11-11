@@ -13,6 +13,9 @@ import { assertDefined } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
 import { type NotesLoader } from './_notes';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
+import { CSRFError } from 'remix-utils/csrf/server';
+import { csrf } from '~/utils/csrf.server.ts';
+import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = db.note.findFirst({
@@ -21,6 +24,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     },
   });
 
+  // TODO: use the invariantResponse to be consistent
   assertDefined(note, 'Note Not Found');
 
   return json({
@@ -59,8 +63,17 @@ export const meta: MetaFunction<
 };
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  const form = await request.formData();
-  const intent = form.get('intent');
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+
+  try {
+    await csrf.validate(formData, request.headers);
+  } catch (error) {
+    if (error instanceof CSRFError)
+      throw new Response(error.message, { status: 403 });
+
+    throw error;
+  }
 
   switch (intent) {
     case 'delete': {
@@ -113,6 +126,7 @@ export default function NoteRoute() {
       </div>
       <div className={floatingToolbarClassName}>
         <Form method="POST">
+          <AuthenticityTokenInput />
           <Button
             type="submit"
             variant="destructive"
