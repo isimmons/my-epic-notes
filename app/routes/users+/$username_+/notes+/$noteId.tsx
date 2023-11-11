@@ -65,7 +65,7 @@ export const meta: MetaFunction<
 export async function action({ request, params }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
-
+  // TODO: extract to csrf utils
   try {
     await csrf.validate(formData, request.headers);
   } catch (error) {
