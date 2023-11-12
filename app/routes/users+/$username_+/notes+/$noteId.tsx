@@ -1,21 +1,20 @@
 import {
   json,
   redirect,
-  type LoaderFunctionArgs,
   type ActionFunctionArgs,
+  type LoaderFunctionArgs,
   type MetaFunction,
 } from '@remix-run/node';
 import { Form, Link, useLoaderData } from '@remix-run/react';
+import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
+import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button } from '~/components/ui/button';
+import { validateCsrfToken } from '~/utils/csrf.server.ts';
 import { db } from '~/utils/db.server';
-import { assertDefined } from '~/utils/misc';
+import { invariantResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
 import { type NotesLoader } from './_notes';
-import { GeneralErrorBoundary } from '~/components/error-boundary';
-import { CSRFError } from 'remix-utils/csrf/server';
-import { csrf } from '~/utils/csrf.server.ts';
-import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = db.note.findFirst({
@@ -24,8 +23,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     },
   });
 
-  // TODO: use the invariantResponse to be consistent
-  assertDefined(note, 'Note Not Found');
+  invariantResponse(note, 'Not Found', { status: 404 });
 
   return json({
     note: {
@@ -65,15 +63,8 @@ export const meta: MetaFunction<
 export async function action({ request, params }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get('intent');
-  // TODO: extract to csrf utils
-  try {
-    await csrf.validate(formData, request.headers);
-  } catch (error) {
-    if (error instanceof CSRFError)
-      throw new Response(error.message, { status: 403 });
 
-    throw error;
-  }
+  await validateCsrfToken(formData, request.headers);
 
   switch (intent) {
     case 'delete': {
