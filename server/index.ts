@@ -11,6 +11,12 @@ import rateLimit from 'express-rate-limit';
 import getPort, { portNumbers } from 'get-port';
 import morgan from 'morgan';
 
+import dotenv from 'dotenv';
+
+const envIsSet = dotenv.config();
+
+if (envIsSet.error) throw new Error('Problem parsing .env file');
+
 const MODE = process.env.NODE_ENV;
 const BUILD_PATH = '../build/index.js';
 const WATCH_PATH = '../build/version.txt';
