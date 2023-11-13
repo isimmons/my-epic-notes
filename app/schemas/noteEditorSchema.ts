@@ -15,7 +15,7 @@ const ACCEPTED_IMAGE_TYPES = [
 const ImageFieldsetSchema = z.object({
   id: z.string().optional(),
   file: z
-    .instanceof(File)
+    .custom<File>()
     .refine(
       file => file?.size && file.size <= MAX_UPLOAD_SIZE,
       `Max file size is ${MAX_UPLOAD_SIZE} KB.`,
