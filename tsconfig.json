@@ -9,6 +9,7 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "target": "ES2022",
+    "skipLibCheck": true,
     "strict": true,
     "allowJs": true,
     "allowImportingTsExtensions": true,
@@ -17,8 +18,10 @@
     "paths": {
       "~/*": ["./app/*"]
     },
+    
 
     // Remix takes care of building everything in `remix build`.
     "noEmit": true
-  }
+  },
+  "exclude": ["./build"]
 }
