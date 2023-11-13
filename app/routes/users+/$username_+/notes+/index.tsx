@@ -1,5 +1,5 @@
 import { type MetaFunction } from '@remix-run/node';
-import { type NotesLoader } from './notes';
+import { type NotesLoader } from './_notes';
 
 export const meta: MetaFunction<
   null,
