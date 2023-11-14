@@ -10,10 +10,14 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import getPort, { portNumbers } from 'get-port';
 import morgan from 'morgan';
+import './globalSetup.ts';
 
 const MODE = process.env.NODE_ENV;
 const BUILD_PATH = '../build/index.js';
 const WATCH_PATH = '../build/version.txt';
+
+console.log('Mode is: ', MODE);
+console.log('Are we testing? ', process.env.TESTING);
 
 const build: ServerBuild = await import(BUILD_PATH);
 let devBuild = build;
