@@ -71,15 +71,40 @@ app.use(express.static('public', { maxAge: '1h' }));
 morgan.token('url', req => decodeURIComponent(req.url ?? ''));
 app.use(morgan('tiny'));
 
+// rate limiting
+
 const rateMaxMultiple = MODE === 'test' ? 10_000 : 1;
-app.use(
-  rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    limit: 1000 * rateMaxMultiple,
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
+const rateLimitDefault = {
+  windowMs: 60 * 1000, // 1 minute
+  limit: 1000 * rateMaxMultiple,
+  standardHeaders: true,
+  legacyHeaders: false,
+};
+
+const strongestRateLimit = rateLimit({
+  ...rateLimitDefault,
+  limit: 10 * rateMaxMultiple,
+});
+
+const strongRateLimit = rateLimit({
+  ...rateLimitDefault,
+  limit: 100 * rateMaxMultiple,
+});
+
+const generalRateLimit = rateLimit(rateLimitDefault);
+
+app.use((req, res, next) => {
+  const strongPaths = ['/signup'];
+
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    if (strongPaths.some(path => req.path.includes(path))) {
+      return strongestRateLimit(req, res, next);
+    }
+    return strongRateLimit(req, res, next);
+  }
+
+  return generalRateLimit(req, res, next);
+});
 
 app.all(
   '*',
