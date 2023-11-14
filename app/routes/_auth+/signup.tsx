@@ -4,13 +4,17 @@ import {
   type MetaFunction,
 } from '@remix-run/node';
 import { Form } from '@remix-run/react';
+import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 import { HoneypotInputs } from 'remix-utils/honeypot/react';
 import { SpamError } from 'remix-utils/honeypot/server';
 import { Button, Input, Label } from '~/components/ui';
+import { validateCsrfToken } from '~/utils/csrf.server';
 import { honeypot } from '~/utils/honeypot.server';
 
 export async function action({ request }: DataFunctionArgs) {
   const formData = await request.formData();
+
+  await validateCsrfToken(formData, request.headers);
 
   try {
     honeypot.check(formData);
@@ -38,6 +42,7 @@ export default function SignupRoute() {
           method="POST"
           className="mx-auto flex min-w-[368px] max-w-sm flex-col gap-4"
         >
+          <AuthenticityTokenInput />
           <HoneypotInputs />
           <div>
             <Label htmlFor="email-input">Email</Label>

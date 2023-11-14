@@ -17,6 +17,8 @@ import { db, updateNote } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { ErrorList, ImageChooser } from './_components';
 import { NoteEditorSchema, MAX_UPLOAD_SIZE } from '~/schemas';
+import { validateCsrfToken } from '~/utils/csrf.server';
+import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = db.note.findFirst({
@@ -45,6 +47,8 @@ export async function action({ request, params }: DataFunctionArgs) {
     request,
     createMemoryUploadHandler({ maxPartSize: MAX_UPLOAD_SIZE }),
   );
+
+  await validateCsrfToken(formData, request.headers);
 
   const submission = parse(formData, { schema: NoteEditorSchema });
 
@@ -111,6 +115,7 @@ export default function NoteEdit() {
         {...form.props}
         encType="multipart/form-data"
       >
+        <AuthenticityTokenInput />
         {/* Allows 'Enter' in text fields without triggering delete button */}
         <button type="submit" className="hidden"></button>
 
