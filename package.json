@@ -8,7 +8,7 @@
     "dev": "remix dev --manual",
     "start": "remix-serve ./build/index.js",
     "typecheck": "tsc",
-    "serve": "tsx -r dotenv/config ./server dotenv_config_path=./.env.demo-production"
+    "serve": "remix build && tsx -r dotenv/config ./server dotenv_config_path=./.env.demo-production"
   },
   "dependencies": {
     "@conform-to/react": "^0.9.0",
