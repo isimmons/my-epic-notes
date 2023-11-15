@@ -1,4 +1,3 @@
 {
-  "typescript.tsdk": "node_modules\\typescript\\lib",
-  "workbench.colorTheme": "Night Owl"
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }
