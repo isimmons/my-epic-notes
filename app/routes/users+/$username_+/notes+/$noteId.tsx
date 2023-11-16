@@ -67,7 +67,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   switch (intent) {
     case 'delete': {
-      prisma.note.delete({ where: { id: params.noteId } });
+      await prisma.note.delete({
+        select: { id: true },
+        where: { id: params.noteId },
+      });
       break;
     }
     default: {
