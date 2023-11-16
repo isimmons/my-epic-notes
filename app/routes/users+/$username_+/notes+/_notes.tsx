@@ -5,36 +5,24 @@ import {
 } from '@remix-run/node';
 import { Link, NavLink, Outlet, useLoaderData } from '@remix-run/react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
-import { db } from '~/utils/db.server';
-import { assertDefined, cn } from '~/utils/misc.tsx';
+import { prisma } from '~/utils/db.server';
+import { assertDefined, cn, getUserImgSrc } from '~/utils/misc.tsx';
 
 export async function loader({ params }: DataFunctionArgs) {
-  const user = db.user.findFirst({
-    where: {
-      username: { equals: params.username },
+  const user = await prisma.user.findUnique({
+    select: {
+      username: true,
+      name: true,
+      image: true,
+      notes: { select: { id: true, title: true } },
     },
-  });
-  const notes = db.note.findMany({
-    where: {
-      owner: {
-        username: { equals: params.username },
-      },
-    },
+    where: { username: params.username },
   });
 
   assertDefined(user, 'User Not Found');
 
-  const notesData =
-    !notes || notes.length < 1
-      ? []
-      : notes.map(note => ({ id: note.id, title: note.title }));
-
   return json({
-    user: {
-      username: user.username,
-      name: user.name,
-    },
-    notes: notesData,
+    user,
   });
 }
 
@@ -56,9 +44,10 @@ export default function NotesRoute() {
   const data = useLoaderData<typeof loader>();
 
   const {
-    notes,
-    user: { username, name },
+    user: { username, name, image, notes },
   } = data;
+
+  const displayName = name ?? username;
 
   const hasNotes = notes.length > 0;
 
@@ -70,9 +59,17 @@ export default function NotesRoute() {
       <div className="grid w-full grid-cols-4 bg-muted pl-2 md:container md:mx-2 md:rounded-3xl md:pr-0">
         <div className="relative col-span-1">
           <div className="absolute inset-0 flex flex-col">
-            <Link to={`/users/${username}`} className="pb-4 pl-8 pr-4 pt-12">
-              <h1 className="text-base font-bold md:text-lg lg:text-left lg:text-2xl">
-                {name ?? username}'s Notes
+            <Link
+              to={`/users/${username}`}
+              className="flex flex-col items-center justify-center gap-2 bg-muted pb-4 pl-8 pr-4 pt-12 lg:flex-row lg:justify-start lg:gap-4"
+            >
+              <img
+                src={getUserImgSrc(image?.id)}
+                alt={displayName}
+                className="h-16 w-16 rounded-full object-cover lg:h-24 lg:w-24"
+              />
+              <h1 className="text-center text-base font-bold md:text-lg lg:text-left lg:text-2xl">
+                {displayName}'s Notes
               </h1>
             </Link>
             {!hasNotes && <p>This user has no notes yet.</p>}

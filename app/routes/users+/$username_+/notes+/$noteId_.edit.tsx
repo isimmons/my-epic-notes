@@ -1,5 +1,6 @@
 import { conform, list, useFieldList, useForm } from '@conform-to/react';
-import { parse, getFieldsetConstraint } from '@conform-to/zod';
+import { getFieldsetConstraint, parse } from '@conform-to/zod';
+import { createId as cuid } from '@paralleldrive/cuid2';
 import {
   unstable_createMemoryUploadHandler as createMemoryUploadHandler,
   json,
@@ -9,35 +10,30 @@ import {
 } from '@remix-run/node';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { useEffect, useRef, useState } from 'react';
+import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useIsSubmitting } from '~/hooks';
-import { db, updateNote } from '~/utils/db.server';
+import { MAX_UPLOAD_SIZE, NoteEditorSchema, type ImageConfig } from '~/schemas';
+import { validateCsrfToken } from '~/utils/csrf.server';
+import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { ErrorList, ImageChooser } from './_components';
-import { NoteEditorSchema, MAX_UPLOAD_SIZE } from '~/schemas';
-import { validateCsrfToken } from '~/utils/csrf.server';
-import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 
 export async function loader({ params }: DataFunctionArgs) {
-  const note = db.note.findFirst({
-    where: {
-      id: {
-        equals: params.noteId,
-      },
+  const note = await prisma.note.findUnique({
+    select: {
+      title: true,
+      content: true,
+      images: { select: { id: true, altText: true } },
     },
+    where: { id: params.noteId },
   });
 
   invariantResponse(note, 'Note not found', { status: 404 });
 
-  return json({
-    note: {
-      title: note.title,
-      content: note.content,
-      images: note.images.map(i => ({ id: i.id, altText: i.altText })),
-    },
-  });
+  return json({ note });
 }
 
 export async function action({ request, params }: DataFunctionArgs) {
@@ -50,7 +46,51 @@ export async function action({ request, params }: DataFunctionArgs) {
 
   await validateCsrfToken(formData, request.headers);
 
-  const submission = parse(formData, { schema: NoteEditorSchema });
+  function imageHasFile(
+    image: ImageConfig,
+  ): image is ImageConfig & { file: NonNullable<ImageConfig['file']> } {
+    return Boolean(image.file?.size && image.file?.size > 0);
+  }
+
+  function imageHasId(
+    image: ImageConfig,
+  ): image is ImageConfig & { id: NonNullable<ImageConfig['id']> } {
+    return image.id != null;
+  }
+  const submission = await parse(formData, {
+    schema: NoteEditorSchema.transform(async ({ images = [], ...data }) => {
+      return {
+        ...data,
+        imageUpdates: await Promise.all(
+          images.filter(imageHasId).map(async i => {
+            if (imageHasFile(i)) {
+              return {
+                id: i.id,
+                altText: i.altText,
+                contentType: i.file.type,
+                blob: Buffer.from(await i.file.arrayBuffer()),
+              };
+            } else {
+              return { id: i.id, altText: i.altText };
+            }
+          }),
+        ),
+        newImages: await Promise.all(
+          images
+            .filter(imageHasFile)
+            .filter(i => !i.id)
+            .map(async image => {
+              return {
+                altText: image.altText,
+                contentType: image.file.type,
+                blob: Buffer.from(await image.file.arrayBuffer()),
+              };
+            }),
+        ),
+      };
+    }),
+    async: true,
+  });
 
   if (submission.intent !== 'submit') {
     return json({ status: 'idle', submission } as const);
@@ -61,14 +101,40 @@ export async function action({ request, params }: DataFunctionArgs) {
       status: 400,
     });
 
-  const { title, content, images } = submission.value;
-
-  await updateNote({
-    id: params.noteId,
+  const {
     title,
     content,
-    images,
+    imageUpdates = [],
+    newImages = [],
+  } = submission.value;
+
+  await prisma.note.update({
+    select: { id: true },
+    where: { id: params.noteId },
+    data: { title, content },
   });
+
+  await prisma.noteImage.deleteMany({
+    where: {
+      id: { notIn: imageUpdates.map(i => i.id) },
+      noteId: params.noteId,
+    },
+  });
+
+  for (const updates of imageUpdates) {
+    await prisma.noteImage.update({
+      select: { id: true },
+      where: { id: updates.id },
+      data: { ...updates, id: updates.blob ? cuid() : updates.id },
+    });
+  }
+
+  for (const newImage of newImages) {
+    await prisma.noteImage.create({
+      select: { id: true },
+      data: { ...newImage, noteId: params.noteId },
+    });
+  }
 
   return redirect(`/users/${params.username}/notes/${params.noteId}`);
 }

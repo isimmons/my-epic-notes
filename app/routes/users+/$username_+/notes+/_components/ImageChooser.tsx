@@ -16,7 +16,7 @@ const ImageChooser = ({ config }: ImageChooserProps) => {
 
   const existingImage = Boolean(fields.id.defaultValue);
   const [previewImage, setPreviewImage] = useState<string | null>(
-    existingImage ? `/resources/images/${fields.id.defaultValue}` : null,
+    existingImage ? `/resources/note-images/${fields.id.defaultValue}` : null,
   );
   const [altText, setAltText] = useState(fields.altText.defaultValue ?? '');
   const [nojs, setNojs] = useState(true);

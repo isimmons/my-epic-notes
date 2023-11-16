@@ -108,6 +108,7 @@ async function seed() {
   for (let index = 0; index < totalUsers; index++) {
     await prisma.user
       .create({
+        select: { id: true },
         data: {
           ...createUser(),
           image: { create: userImages[index % 10] },
@@ -130,7 +131,6 @@ async function seed() {
         },
       })
       .catch(e => {
-        // don't throw just because a few users failed uniqueEnforcer
         console.error('Error creating user: ', e);
         return null;
       });
@@ -173,6 +173,7 @@ async function seed() {
   });
 
   await prisma.user.create({
+    select: { id: true },
     data: {
       email: 'kody@kcd.dev',
       username: 'kody',

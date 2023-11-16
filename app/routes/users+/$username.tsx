@@ -5,24 +5,24 @@ import {
 } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
-import { db } from '~/utils/db.server';
-import { assertDefined } from '~/utils/misc';
+import { prisma } from '~/utils/db.server';
+import { assertDefined, getUserImgSrc } from '~/utils/misc';
+import { Button } from '~/components/ui';
 
 export async function loader({ params }: DataFunctionArgs) {
-  const user = db.user.findFirst({
-    where: {
-      username: { equals: params.username },
+  const user = await prisma.user.findUnique({
+    select: {
+      name: true,
+      username: true,
+      createdAt: true,
+      image: { select: { id: true } },
     },
+    where: { username: params.username },
   });
 
   assertDefined(user, 'User Not Found');
 
-  return json({
-    user: {
-      username: user.username,
-      name: user.name,
-    },
-  });
+  return json({ user });
 }
 
 export type UsernameLoader = typeof loader;
@@ -50,14 +50,44 @@ export function ErrorBoundary() {
 
 export default function ProfileRoute() {
   const data = useLoaderData<typeof loader>();
-  const { username, name } = data.user;
+  const user = data.user;
+  const userDisplayName = user.name ?? user.username;
+  const userJoinedDate = new Date(user.createdAt).toLocaleDateString();
 
   return (
-    <div className="container mb-48 mt-36">
-      <h1 className="text-h1">{name ?? username}</h1>
-      <Link to="notes" prefetch="intent" className="underline">
-        Notes
-      </Link>
+    <div className="container mb-48 mt-36 flex flex-col items-center justify-center">
+      <div className="h-4" />
+      <div className="container flex flex-col items-center rounded-3xl bg-muted p-12">
+        <div className="relative w-52">
+          <div className="absolute -top-40">
+            <div className="relative">
+              <img
+                src={getUserImgSrc(data.user.image?.id)}
+                alt={userDisplayName}
+                className="h-52 w-52 rounded-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="h-20" />
+
+        <div className="flex flex-col items-center">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <h1 className="text-center text-h2">{userDisplayName}</h1>
+          </div>
+          <p className="mt-2 text-center text-muted-foreground">
+            Joined {userJoinedDate}
+          </p>
+          <div className="mt-10 flex gap-4">
+            <Button asChild>
+              <Link to="notes" prefetch="intent">
+                {userDisplayName}'s notes
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -11,26 +11,25 @@ import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
 import { Button } from '~/components/ui/button';
 import { validateCsrfToken } from '~/utils/csrf.server.ts';
-import { db } from '~/utils/db.server';
+import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
 import { type NotesLoader } from './_notes';
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const note = db.note.findFirst({
-    where: {
-      id: { equals: params.noteId },
+  const note = await prisma.note.findUnique({
+    select: {
+      title: true,
+      content: true,
+      images: { select: { id: true, altText: true } },
     },
+    where: { id: params.noteId },
   });
 
   invariantResponse(note, 'Not Found', { status: 404 });
 
   return json({
-    note: {
-      title: note.title,
-      content: note.content,
-      images: note.images.map(i => ({ id: i.id, altText: i.altText })),
-    },
+    note,
   });
 }
 
@@ -68,7 +67,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   switch (intent) {
     case 'delete': {
-      db.note.delete({ where: { id: { equals: params.noteId } } });
+      prisma.note.delete({ where: { id: params.noteId } });
       break;
     }
     default: {
@@ -103,9 +102,9 @@ export default function NoteRoute() {
         <ul className="flex flex-wrap gap-5 py-5">
           {images.map(image => (
             <li key={image.id}>
-              <a href={`/resources/images/${image.id}`}>
+              <a href={`/resources/note-images/${image.id}`}>
                 <img
-                  src={`/resources/images/${image.id}`}
+                  src={`/resources/note-images/${image.id}`}
                   alt={image.altText ?? ''}
                   className="h-32 w-32 rounded-lg object-cover"
                 />
