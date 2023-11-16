@@ -9,6 +9,37 @@ import os from 'node:os';
 import path from 'node:path';
 import { factory, manyOf, nullable, oneOf, primaryKey } from '@mswjs/data';
 import { singleton } from './singleton.server.ts';
+import { PrismaClient } from '@prisma/client';
+import chalk from 'chalk';
+
+export const prisma = singleton('prisma', () => {
+  const logThreshold = 0;
+  const client = new PrismaClient({
+    log: [
+      { level: 'query', emit: 'event' },
+      { level: 'error', emit: 'stdout' },
+      { level: 'info', emit: 'stdout' },
+      { level: 'warn', emit: 'stdout' },
+    ],
+  });
+  client.$on('query', e => {
+    if (e.duration < logThreshold) return;
+    const color =
+      e.duration < logThreshold * 1.1
+        ? 'green'
+        : e.duration < logThreshold * 1.2
+        ? 'blue'
+        : e.duration < logThreshold * 1.3
+        ? 'yellow'
+        : e.duration < logThreshold * 1.4
+        ? 'redBright'
+        : 'red';
+    const dur = chalk[color](`${e.duration}ms`);
+    console.info(`prisma:query - ${dur} - ${e.query}`);
+  });
+  client.$connect();
+  return client;
+});
 
 const getId = () => crypto.randomBytes(16).toString('hex').slice(0, 8);
 
