@@ -23,6 +23,8 @@ A few noticable changes are
 I added the express server just for demo of concepts rate limiting exercises and whatever we might use it for in future exercises/workshops. Using dotenv to make the demo work with the understanding that real production hosting will provide a secure method for setting environment variables such as secrets and api keys and will have NODE_ENV set to production by default already. .env files are for development and should not be committed to repo. This is just a convenient way to make the demo work locally.
 
 
+👁️👁️
+
 # Welcome to Remix!
 
 - [Remix Docs](https://remix.run/docs)
