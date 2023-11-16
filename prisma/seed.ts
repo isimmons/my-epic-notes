@@ -132,6 +132,7 @@ async function seed() {
       .catch(e => {
         // don't throw just because a few users failed uniqueEnforcer
         console.error('Error creating user: ', e);
+        return null;
       });
   }
   console.timeEnd(`👤 Created ${totalUsers} users...`);
