@@ -27,7 +27,14 @@ export async function loader({ request }: DataFunctionArgs) {
       LIMIT 50`,
   );
 
-  const result = UserSearchResultsSchema.safeParse(rawUsers);
+  const result =
+    ENV.MODE === 'production'
+      ? ({
+          success: true,
+          data: rawUsers as UserSearchResults,
+        } as const)
+      : UserSearchResultsSchema.safeParse(rawUsers);
+
   if (!result.success) {
     return json({ status: 'error', error: result.error.message } as const, {
       status: 400,
