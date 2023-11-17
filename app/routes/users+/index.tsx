@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import UserSearchResultsSchema, {
   type UserSearchResults,
 } from '~/schemas/userSearchResultsSchema';
+import ErrorList from '~/components/ErrorList';
 
 export async function loader({ request }: DataFunctionArgs) {
   const searchTerm = new URL(request.url).searchParams.get('search');
@@ -97,6 +98,8 @@ export default function UsersRoute() {
           ) : (
             <p>No users found</p>
           )
+        ) : data.status === 'error' ? (
+          <ErrorList errors={['Error retrieving users']} />
         ) : null}
       </main>
     </div>

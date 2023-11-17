@@ -13,13 +13,14 @@ import { useEffect, useRef, useState } from 'react';
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 import { GeneralErrorBoundary } from '~/components/error-boundary';
 import { floatingToolbarClassName } from '~/components/floating-toolbar';
+import ErrorList from '~/components/ErrorList';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useIsSubmitting } from '~/hooks';
 import { MAX_UPLOAD_SIZE, NoteEditorSchema, type ImageConfig } from '~/schemas';
 import { validateCsrfToken } from '~/utils/csrf.server';
 import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
-import { ErrorList, ImageChooser } from './_components';
+import { ImageChooser } from './_components';
 
 export async function loader({ params }: DataFunctionArgs) {
   const note = await prisma.note.findUnique({
