@@ -4,10 +4,10 @@ import {
   type MetaFunction,
 } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
-import { GeneralErrorBoundary } from '~/components/error-boundary';
+import { GeneralErrorBoundary } from '~/components';
+import { Button } from '~/components/ui';
 import { prisma } from '~/utils/db.server';
 import { assertDefined, getUserImgSrc } from '~/utils/misc';
-import { Button } from '~/components/ui';
 
 export async function loader({ params }: DataFunctionArgs) {
   const user = await prisma.user.findUnique({

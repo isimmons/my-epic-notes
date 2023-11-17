@@ -1,15 +1,14 @@
+import { Prisma } from '@prisma/client';
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
-import { GeneralErrorBoundary } from '~/components/error-boundary.tsx';
-import { SearchBar } from '~/components/search-bar.tsx';
-import { prisma } from '~/utils/db.server.ts';
-import { cn, getUserImgSrc } from '~/utils/misc.tsx';
+import { GeneralErrorBoundary, SearchBar } from '~/components';
+import ErrorList from '~/components/ErrorList';
 import { useDelayedIsPending } from '~/hooks';
-import { Prisma } from '@prisma/client';
 import UserSearchResultsSchema, {
   type UserSearchResults,
 } from '~/schemas/userSearchResultsSchema';
-import ErrorList from '~/components/ErrorList';
+import { prisma } from '~/utils/db.server';
+import { cn, getUserImgSrc } from '~/utils/misc';
 
 export async function loader({ request }: DataFunctionArgs) {
   const searchTerm = new URL(request.url).searchParams.get('search');

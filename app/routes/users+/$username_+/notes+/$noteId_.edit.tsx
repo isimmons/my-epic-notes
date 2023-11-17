@@ -11,9 +11,11 @@ import {
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { useEffect, useRef, useState } from 'react';
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
-import { GeneralErrorBoundary } from '~/components/error-boundary';
-import { floatingToolbarClassName } from '~/components/floating-toolbar';
-import ErrorList from '~/components/ErrorList';
+import {
+  ErrorList,
+  GeneralErrorBoundary,
+  floatingToolbarClassName,
+} from '~/components';
 import { Button, Input, Label, StatusButton, Textarea } from '~/components/ui';
 import { useIsSubmitting } from '~/hooks';
 import { MAX_UPLOAD_SIZE, NoteEditorSchema, type ImageConfig } from '~/schemas';

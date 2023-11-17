@@ -1,5 +1,5 @@
 import { useSpinDelay } from 'spin-delay';
-import useIsPending from './useIsPending';
+import { useIsPending } from '~/hooks';
 
 /**
  * This combines useSpinDelay (from https://npm.im/spin-delay) and useIsPending

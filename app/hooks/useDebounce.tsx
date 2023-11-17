@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { debounce } from '~/utils/misc';
 /**
  * Debounce a callback function

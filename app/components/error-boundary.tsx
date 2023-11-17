@@ -18,7 +18,7 @@ export type GeneralErrorBoundaryProps = {
   unexpectedErrorHandler?: (error: unknown) => ReactNode;
 };
 
-export function GeneralErrorBoundary({
+export default function GeneralErrorBoundary({
   defaultStatusHandler = ({ error }) => (
     <p>
       {error.status} {error.data}

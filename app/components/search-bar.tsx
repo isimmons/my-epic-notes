@@ -6,7 +6,7 @@ import { Input } from './ui/input.tsx';
 import { Label } from './ui/label.tsx';
 import { StatusButton } from './ui/status-button.tsx';
 
-export function SearchBar({
+export default function SearchBar({
   status,
   autoFocus = false,
   autoSubmit = false,

@@ -11,7 +11,7 @@ export const meta: MetaFunction<
     m => m.id === 'routes/users+/$username_+/notes',
   );
   const displayName = noteMatch?.data.user.name ?? params.username;
-  const noteCount = noteMatch?.data.notes.length || 0;
+  const noteCount = noteMatch?.data.user.notes.length || 0;
   const notesText = noteCount === 1 ? 'note' : 'notes';
 
   return [
