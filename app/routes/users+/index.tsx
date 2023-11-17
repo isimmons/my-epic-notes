@@ -6,7 +6,9 @@ import { prisma } from '~/utils/db.server.ts';
 import { cn, getUserImgSrc } from '~/utils/misc.tsx';
 import { useDelayedIsPending } from '~/hooks';
 import { Prisma } from '@prisma/client';
-import { type User } from '~/types';
+import UserSearchResultsSchema, {
+  type UserSearchResults,
+} from '~/schemas/userSearchResultsSchema';
 
 export async function loader({ request }: DataFunctionArgs) {
   const searchTerm = new URL(request.url).searchParams.get('search');
@@ -16,7 +18,7 @@ export async function loader({ request }: DataFunctionArgs) {
 
   const like = `%${searchTerm ?? ''}%`;
 
-  const users = await prisma.$queryRaw<Array<User>>(
+  const rawUsers = await prisma.$queryRaw<UserSearchResults>(
     Prisma.sql`
       SELECT id, name, username
       FROM User
@@ -25,9 +27,16 @@ export async function loader({ request }: DataFunctionArgs) {
       LIMIT 50`,
   );
 
+  const result = UserSearchResultsSchema.safeParse(rawUsers);
+  if (!result.success) {
+    return json({ status: 'error', error: result.error.message } as const, {
+      status: 400,
+    });
+  }
+
   return json({
     status: 'idle',
-    users,
+    users: result.data,
   } as const);
 }
 
@@ -38,6 +47,8 @@ export default function UsersRoute() {
     formAction: '/users',
   });
 
+  if (data.status === 'error') console.log(data.error);
+
   return (
     <div className="container mb-48 mt-36 flex flex-col items-center justify-center gap-6">
       <h1 className="text-h1">Epic Notes Users</h1>
@@ -46,7 +57,6 @@ export default function UsersRoute() {
       </div>
       <main>
         {data.status === 'idle' ? (
-          // 🦺 TypeScript won't like this. We'll fix it later.
           data.users.length ? (
             <ul
               className={cn(
@@ -54,7 +64,6 @@ export default function UsersRoute() {
                 { 'opacity-50': isPending },
               )}
             >
-              {/* 🦺 TypeScript won't like this. We'll fix it later. */}
               {data.users.map(user => (
                 <li key={user.id}>
                   <Link
