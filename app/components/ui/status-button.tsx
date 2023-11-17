@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { cn } from '~/utils/misc.tsx';
-import { Button, type ButtonProps } from './button.tsx';
+import { Button, type ButtonProps } from '~/components/ui';
+import { cn } from '~/utils/misc';
 
-export const StatusButton = React.forwardRef<
+const StatusButton = React.forwardRef<
   HTMLButtonElement,
   ButtonProps & { status: 'pending' | 'success' | 'error' | 'idle' }
 >(({ status = 'idle', className, children, ...props }, ref) => {
@@ -23,4 +23,7 @@ export const StatusButton = React.forwardRef<
     </Button>
   );
 });
+
 StatusButton.displayName = 'Button';
+
+export default StatusButton;

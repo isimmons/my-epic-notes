@@ -1,20 +1,20 @@
-import os from 'node:os';
 import { cssBundleHref } from '@remix-run/css-bundle';
 import {
   json,
-  type MetaFunction,
-  type LinksFunction,
   type DataFunctionArgs,
+  type LinksFunction,
+  type MetaFunction,
 } from '@remix-run/node';
 import { Link, Outlet, useLoaderData } from '@remix-run/react';
-import tailwind from '~/styles/tailwind.css';
-import { getEnv } from './utils/env.server';
-import Document from './document';
-import { GeneralErrorBoundary } from './components/error-boundary';
-import { honeypot } from './utils/honeypot.server';
-import { HoneypotProvider } from 'remix-utils/honeypot/react';
-import { csrf } from './utils/csrf.server';
+import os from 'node:os';
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react';
+import { HoneypotProvider } from 'remix-utils/honeypot/react';
+import { GeneralErrorBoundary } from '~/components';
+import tailwind from '~/styles/tailwind.css';
+import { csrf } from '~/utils/csrf.server';
+import { getEnv } from '~/utils/env.server';
+import { honeypot } from '~/utils/honeypot.server';
+import Document from './document';
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),

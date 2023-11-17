@@ -9,7 +9,7 @@ import { Form, Link, useLoaderData } from '@remix-run/react';
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react';
 import { GeneralErrorBoundary, floatingToolbarClassName } from '~/components';
 import { Button } from '~/components/ui';
-import { validateCsrfToken } from '~/utils/csrf.server.ts';
+import { validateCsrfToken } from '~/utils/csrf.server';
 import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';

@@ -1,8 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
-import { GeneralErrorBoundary, SearchBar } from '~/components';
-import ErrorList from '~/components/ErrorList';
+import { ErrorList, GeneralErrorBoundary, SearchBar } from '~/components';
 import { useDelayedIsPending } from '~/hooks';
 import UserSearchResultsSchema, {
   type UserSearchResults,

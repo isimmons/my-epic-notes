@@ -1,10 +1,7 @@
 import { Form, useSearchParams, useSubmit } from '@remix-run/react';
 import { useId } from 'react';
+import { Icon, Input, Label, StatusButton } from '~/components/ui';
 import { useDebounce, useIsPending } from '~/hooks';
-import { Icon } from './ui/icon.tsx';
-import { Input } from './ui/input.tsx';
-import { Label } from './ui/label.tsx';
-import { StatusButton } from './ui/status-button.tsx';
 
 export default function SearchBar({
   status,

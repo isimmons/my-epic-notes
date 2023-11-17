@@ -1,5 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
-import { cn } from '~/utils/misc.tsx';
+import { cn } from '~/utils/misc';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 
@@ -20,4 +20,4 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = 'Input';
 
-export { Input };
+export default Input;

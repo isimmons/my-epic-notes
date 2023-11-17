@@ -1,5 +1,5 @@
 import { type ErrorResponse } from '@remix-run/react';
-import { type ClassValue, clsx } from 'clsx';
+import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import userFallback from '~/assets/user.png';
 
