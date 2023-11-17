@@ -87,7 +87,12 @@ In my mind the more complicated part of the whole process is in correctly parsin
 // nested query
 // Notice all 3 of the image related queries are nested under 'images'
 // which is part of the note so we get to remove the extra select and 
-// where clauses.
+// where clauses. Also notice because prisma is smart, we only have to
+// pass an array to the queries. create is simple. deleteMany and
+// updateMany need us to map over the array just to perform extra
+// tasks such as deleteing all images not found in imageUpdates
+// or changing the image id in updateMany in order to bust  
+// image cacheing
 await prisma.note.update({
     select: { id: true },
     where: { id: params.noteId },
