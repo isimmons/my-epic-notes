@@ -34,6 +34,8 @@ model Note {
   owner   User        @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String
   images  NoteImage[]
+
+  @@index([ownerId])
 }
 
 model NoteImage {
@@ -47,6 +49,8 @@ model NoteImage {
 
   note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   noteId String
+
+  @@index([noteId])
 }
 
 model UserImage {
