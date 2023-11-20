@@ -38,7 +38,7 @@ export async function loader({ request }: DataFunctionArgs) {
     ENV.MODE === 'production'
       ? ({
           success: true,
-          data: rawUsers as UserSearchResults,
+          data: rawUsers,
         } as const)
       : UserSearchResultsSchema.safeParse(rawUsers);
 
