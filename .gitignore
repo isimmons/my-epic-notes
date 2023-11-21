@@ -7,3 +7,4 @@ node_modules
 
 
 prisma/data.db
+prisma/data.db-journal
