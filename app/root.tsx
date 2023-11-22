@@ -1,3 +1,5 @@
+import { useForm } from '@conform-to/react';
+import { parse } from '@conform-to/zod';
 import { cssBundleHref } from '@remix-run/css-bundle';
 import {
   json,
@@ -5,16 +7,28 @@ import {
   type LinksFunction,
   type MetaFunction,
 } from '@remix-run/node';
-import { Link, Outlet, useLoaderData } from '@remix-run/react';
+import {
+  Link,
+  Outlet,
+  useFetcher,
+  useLoaderData,
+  useMatches,
+} from '@remix-run/react';
 import os from 'node:os';
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react';
 import { HoneypotProvider } from 'remix-utils/honeypot/react';
-import { GeneralErrorBoundary } from '~/components';
+import { z } from 'zod';
+import { ErrorList, GeneralErrorBoundary, SearchBar } from '~/components';
 import tailwind from '~/styles/tailwind.css';
 import { csrf } from '~/utils/csrf.server';
 import { getEnv } from '~/utils/env.server';
 import { honeypot } from '~/utils/honeypot.server';
+import { Button, Icon } from './components/ui';
 import Document from './document';
+import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
+import { invariantResponse } from './utils/misc';
+import { useLayoutEffect, useState } from 'react';
+
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -27,6 +41,7 @@ export async function loader({ request }: DataFunctionArgs) {
   return json(
     {
       username: os.userInfo().username,
+      theme: getTheme(request),
       ENV: getEnv(),
       honeyProps,
       csrfToken,
@@ -37,19 +52,75 @@ export async function loader({ request }: DataFunctionArgs) {
   );
 }
 
+export async function action({ request }: DataFunctionArgs) {
+  const formData = await request.formData();
+  invariantResponse(
+    formData.get('intent') === 'update-theme',
+    'Invalid intent',
+    { status: 400 },
+  );
+  const submission = parse(formData, {
+    schema: ThemeFormSchema,
+  });
+  if (submission.intent !== 'submit') {
+    return json({ status: 'success', submission } as const);
+  }
+  if (!submission.value) {
+    return json({ status: 'error', submission } as const, { status: 400 });
+  }
+
+  const { theme } = submission.value;
+
+  const responseInit = {
+    headers: { 'set-cookie': setTheme(theme) },
+  };
+
+  return json({ success: true, submission }, responseInit);
+}
+
+const ThemeFormSchema = z.object({
+  theme: z.enum(['light', 'dark']),
+});
+
+const getSystemTheme = () => {
+  if (window.matchMedia) {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    } else return 'light';
+  }
+};
+
 function App() {
+  const [systemTheme, setSystemTheme] = useState<
+    'light' | 'dark' | undefined
+  >();
+
+  useLayoutEffect(() => {
+    setSystemTheme(getSystemTheme());
+  }, []);
+
   const data = useLoaderData<typeof loader>();
+  const theme = data.theme || systemTheme;
+  const matches = useMatches();
+  const isOnSearchPage = matches.find(m => m.id === 'routes/users+/index');
   return (
-    <Document>
-      <header className="container mx-auto py-6">
-        <nav className="flex justify-between">
+    <Document theme={theme} env={data.ENV}>
+      <header className="container px-6 py-4 sm:px-8 sm:py-6">
+        <nav className="flex items-center justify-between gap-4 sm:gap-6">
           <Link to="/">
             <div className="font-light">epic</div>
             <div className="font-bold">notes</div>
           </Link>
-          <Link className="underline" to="/signup">
-            Signup
-          </Link>
+          {isOnSearchPage ? null : (
+            <div className="ml-auto max-w-sm flex-1">
+              <SearchBar status="idle" />
+            </div>
+          )}
+          <div className="flex items-center gap-10">
+            <Button asChild variant="default" size="sm">
+              <Link to="/login">Log In</Link>
+            </Button>
+          </div>
         </nav>
       </header>
 
@@ -57,26 +128,23 @@ function App() {
         <Outlet />
       </div>
 
-      <div className="container mx-auto flex justify-between">
+      <div className="container flex justify-between">
         <Link to="/">
           <div className="font-light">epic</div>
           <div className="font-bold">notes</div>
         </Link>
-        <p>Built with ♥️ by {data.username}</p>
+        <div className="flex items-center gap-2">
+          <p>Built with ♥️ by {data.username}</p>
+          <ThemeSwitch userPreference={theme} />
+        </div>
       </div>
       <div className="h-5" />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
-        }}
-      />
     </Document>
   );
 }
 
 export default function AppWithProviders() {
   const data = useLoaderData<typeof loader>();
-  // TODO: lookup dealing with multiple providers. Remember nice solution in one of old projects
   return (
     <AuthenticityTokenProvider token={data.csrfToken}>
       <HoneypotProvider {...data.honeyProps}>
@@ -96,6 +164,49 @@ export const meta: MetaFunction = () => {
     },
   ];
 };
+
+function ThemeSwitch({ userPreference }: { userPreference?: Theme }) {
+  const fetcher = useFetcher<typeof action>();
+  const [form] = useForm({
+    id: 'theme-switch',
+    lastSubmission: fetcher.data?.submission,
+    onValidate({ formData }) {
+      return parse(formData, { schema: ThemeFormSchema });
+    },
+  });
+
+  const mode = userPreference || 'light';
+  const nextMode = mode === 'light' ? 'dark' : 'light';
+  const modeLabel = {
+    light: (
+      <Icon name="sun">
+        <span className="sr-only">Light</span>
+      </Icon>
+    ),
+    dark: (
+      <Icon name="moon">
+        <span className="sr-only">Dark</span>
+      </Icon>
+    ),
+  };
+
+  return (
+    <fetcher.Form method="POST" {...form.props}>
+      <input type="hidden" name="theme" value={nextMode} />
+      <div className="flex gap-2">
+        <button
+          name="intent"
+          value="update-theme"
+          type="submit"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center"
+        >
+          {modeLabel[mode]}
+        </button>
+      </div>
+      <ErrorList errors={form.errors} id={form.errorId} />
+    </fetcher.Form>
+  );
+}
 
 export function ErrorBoundary() {
   return (
