@@ -27,7 +27,7 @@ import { Button, Icon } from './components/ui';
 import Document from './document';
 import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
 import { invariantResponse } from './utils/misc';
-import { useLayoutEffect, useState } from 'react';
+import React from 'react';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -91,11 +91,12 @@ const getSystemTheme = () => {
 };
 
 function App() {
-  const [systemTheme, setSystemTheme] = useState<
+  if (typeof window === 'undefined') React.useLayoutEffect = () => {};
+  const [systemTheme, setSystemTheme] = React.useState<
     'light' | 'dark' | undefined
   >();
 
-  useLayoutEffect(() => {
+  React.useLayoutEffect(() => {
     setSystemTheme(getSystemTheme());
   }, []);
 
