@@ -11,6 +11,7 @@ import {
   Link,
   Outlet,
   useFetcher,
+  useFetchers,
   useLoaderData,
   useMatches,
 } from '@remix-run/react';
@@ -101,7 +102,7 @@ function App() {
   }, []);
 
   const data = useLoaderData<typeof loader>();
-  const theme = data.theme || systemTheme;
+  const theme = useTheme() || systemTheme;
   const matches = useMatches();
   const isOnSearchPage = matches.find(m => m.id === 'routes/users+/index');
   return (
@@ -166,8 +167,25 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+function useTheme() {
+  //optimistic UI
+  const data = useLoaderData<typeof loader>();
+  const fetchers = useFetchers();
+  const fetcher = fetchers.find(
+    f => f.formData?.get('intent') === 'update-theme',
+  );
+
+  const optimisticTheme = fetcher?.formData?.get('theme');
+  if (optimisticTheme === 'light' || optimisticTheme === 'dark') {
+    return optimisticTheme;
+  }
+
+  return data.theme;
+}
+
 function ThemeSwitch({ userPreference }: { userPreference?: Theme }) {
   const fetcher = useFetcher<typeof action>();
+
   const [form] = useForm({
     id: 'theme-switch',
     lastSubmission: fetcher.data?.submission,
