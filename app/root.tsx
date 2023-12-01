@@ -183,6 +183,9 @@ function useTheme() {
   return data.theme;
 }
 
+// TODO: copy and refactor to use new client hints package
+// see if we can get rid of messy hacky way with client script
+
 function ThemeSwitch({ userPreference }: { userPreference?: Theme }) {
   const fetcher = useFetcher<typeof action>();
 
