@@ -33,7 +33,8 @@ import { getEnv } from '~/utils/env.server';
 import { honeypot } from '~/utils/honeypot.server';
 import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
 import Document from './document';
-import { invariantResponse } from './utils/misc';
+import { combineHeaders, invariantResponse } from './utils/misc';
+import { toastSessionStorage } from './utils/toast.server';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -43,18 +44,30 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: DataFunctionArgs) {
   const honeyProps = honeypot.getInputProps();
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
+  const toastCookieSession = await toastSessionStorage.getSession(
+    request.headers.get('cookie'),
+  );
+  const toast = toastCookieSession.get('toast');
+  toastCookieSession.unset('toast');
 
   return json(
     {
       username: os.userInfo().username,
       theme: getTheme(request),
-      toast: null,
+      toast,
       ENV: getEnv(),
       honeyProps,
       csrfToken,
     },
     {
-      headers: csrfCookieHeader ? { 'set-cookie': csrfCookieHeader } : {},
+      headers: combineHeaders(
+        csrfCookieHeader ? { 'set-cookie': csrfCookieHeader } : null,
+        {
+          'set-cookie': await toastSessionStorage.commitSession(
+            toastCookieSession,
+          ),
+        },
+      ),
     },
   );
 }
@@ -148,7 +161,6 @@ function App() {
         </div>
       </div>
       <div className="h-5" />
-      <AppToast toast={{ id: '1', type: 'success', title: 'Hello' }} />
       {data.toast ? <AppToast toast={data.toast} /> : null}
     </Document>
   );

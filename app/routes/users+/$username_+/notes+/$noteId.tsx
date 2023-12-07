@@ -14,6 +14,7 @@ import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
 import { type NotesLoader } from './_notes';
+import { toastSessionStorage } from '~/utils/toast.server';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = await prisma.note.findUnique({
@@ -77,7 +78,20 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
   }
 
-  return redirect(`/users/${params.username}/notes`);
+  const toastCookieSession = await toastSessionStorage.getSession(
+    request.headers.get('cookie'),
+  );
+  toastCookieSession.set('toast', {
+    type: 'success',
+    title: 'Note deleted',
+    description: 'Your note has been deleted',
+  });
+
+  return redirect(`/users/${params.username}/notes`, {
+    headers: {
+      'set-cookie': await toastSessionStorage.commitSession(toastCookieSession),
+    },
+  });
 }
 
 export function ErrorBoundary() {
