@@ -1,6 +1,11 @@
+export type ErrorListErrors =
+  | Array<string | null | undefined>
+  | null
+  | undefined;
+
 export type ErrorListProps = {
   id?: string;
-  errors?: Array<string> | null;
+  errors?: ErrorListErrors;
 };
 
 const ErrorList = ({ id, errors }: ErrorListProps) => {
