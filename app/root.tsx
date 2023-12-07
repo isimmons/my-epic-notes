@@ -48,7 +48,6 @@ export async function loader({ request }: DataFunctionArgs) {
     request.headers.get('cookie'),
   );
   const toast = toastCookieSession.get('toast');
-  toastCookieSession.unset('toast');
 
   return json(
     {
