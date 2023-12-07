@@ -37,6 +37,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "remix-utils": "^7.3.0",
+    "sonner": "^1.2.4",
     "spin-delay": "^1.2.0",
     "tailwind-merge": "^2.1.0",
     "tailwindcss-animate": "^1.0.7",

@@ -6,6 +6,7 @@ import {
   ScrollRestoration,
 } from '@remix-run/react';
 import { type Theme } from './utils/theme.server';
+import { Toaster } from 'sonner';
 
 export type DocumentProps = {
   children: React.ReactNode;
@@ -77,7 +78,7 @@ export default function Document({ children, theme, env }: DocumentProps) {
             __html: `window.ENV = ${JSON.stringify(env)}`,
           }}
         />
-
+        <Toaster closeButton position="top-center" />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

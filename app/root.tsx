@@ -16,19 +16,24 @@ import {
   useMatches,
 } from '@remix-run/react';
 import os from 'node:os';
+import React from 'react';
 import { AuthenticityTokenProvider } from 'remix-utils/csrf/react';
 import { HoneypotProvider } from 'remix-utils/honeypot/react';
 import { z } from 'zod';
-import { ErrorList, GeneralErrorBoundary, SearchBar } from '~/components';
+import {
+  AppToast,
+  ErrorList,
+  GeneralErrorBoundary,
+  SearchBar,
+} from '~/components';
+import { Button, Icon } from '~/components/ui';
 import tailwind from '~/styles/tailwind.css';
 import { csrf } from '~/utils/csrf.server';
 import { getEnv } from '~/utils/env.server';
 import { honeypot } from '~/utils/honeypot.server';
-import { Button, Icon } from './components/ui';
-import Document from './document';
 import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
+import Document from './document';
 import { invariantResponse } from './utils/misc';
-import React from 'react';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -43,6 +48,7 @@ export async function loader({ request }: DataFunctionArgs) {
     {
       username: os.userInfo().username,
       theme: getTheme(request),
+      toast: null,
       ENV: getEnv(),
       honeyProps,
       csrfToken,
@@ -105,6 +111,7 @@ function App() {
   const theme = useTheme() || systemTheme;
   const matches = useMatches();
   const isOnSearchPage = matches.find(m => m.id === 'routes/users+/index');
+
   return (
     <Document theme={theme} env={data.ENV}>
       <header className="container px-6 py-4 sm:px-8 sm:py-6">
@@ -141,6 +148,8 @@ function App() {
         </div>
       </div>
       <div className="h-5" />
+      <AppToast toast={{ id: '1', type: 'success', title: 'Hello' }} />
+      {data.toast ? <AppToast toast={data.toast} /> : null}
     </Document>
   );
 }
