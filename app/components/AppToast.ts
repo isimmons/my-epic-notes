@@ -1,13 +1,9 @@
 import { useEffect } from 'react';
 import { toast as showToast } from 'sonner';
+import { type Toast } from '~/utils/toast.server';
 
-function AppToast({ toast }: { toast: any }) {
-  const { id, type, title, description } = toast as {
-    id: string;
-    type: 'success' | 'message';
-    title: string;
-    description: string;
-  };
+function AppToast({ toast }: { toast: Toast }) {
+  const { id, type, title, description } = toast;
   useEffect(() => {
     setTimeout(() => {
       showToast[type](title, { id, description });

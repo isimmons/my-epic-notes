@@ -34,7 +34,7 @@ import { honeypot } from '~/utils/honeypot.server';
 import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
 import Document from './document';
 import { combineHeaders, invariantResponse } from './utils/misc';
-import { toastSessionStorage } from './utils/toast.server';
+import { getToast } from './utils/toast.server';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -44,10 +44,8 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: DataFunctionArgs) {
   const honeyProps = honeypot.getInputProps();
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
-  const toastCookieSession = await toastSessionStorage.getSession(
-    request.headers.get('cookie'),
-  );
-  const toast = toastCookieSession.get('toast');
+
+  const { toast, headers: toastHeaders } = await getToast(request);
 
   return json(
     {
@@ -61,11 +59,7 @@ export async function loader({ request }: DataFunctionArgs) {
     {
       headers: combineHeaders(
         csrfCookieHeader ? { 'set-cookie': csrfCookieHeader } : null,
-        {
-          'set-cookie': await toastSessionStorage.commitSession(
-            toastCookieSession,
-          ),
-        },
+        toastHeaders,
       ),
     },
   );

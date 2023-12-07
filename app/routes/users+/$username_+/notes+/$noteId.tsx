@@ -1,6 +1,5 @@
 import {
   json,
-  redirect,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   type MetaFunction,
@@ -14,7 +13,7 @@ import { prisma } from '~/utils/db.server';
 import { invariantResponse } from '~/utils/misc';
 import { getNoteExcerpt } from '~/utils/noteHelpers';
 import { type NotesLoader } from './_notes';
-import { toastSessionStorage } from '~/utils/toast.server';
+import { redirectWithToast } from '~/utils/toast.server';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const note = await prisma.note.findUnique({
@@ -78,19 +77,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
     }
   }
 
-  const toastCookieSession = await toastSessionStorage.getSession(
-    request.headers.get('cookie'),
-  );
-  toastCookieSession.flash('toast', {
+  throw await redirectWithToast(`/users/${params.username}/notes`, {
     type: 'success',
-    title: 'Note deleted',
-    description: 'Your note has been deleted',
-  });
-
-  return redirect(`/users/${params.username}/notes`, {
-    headers: {
-      'set-cookie': await toastSessionStorage.commitSession(toastCookieSession),
-    },
+    title: 'Success',
+    description: 'Your note has been deleted.',
   });
 }
 
