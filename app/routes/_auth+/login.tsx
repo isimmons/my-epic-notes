@@ -1,4 +1,4 @@
-import { conform, useForm } from '@conform-to/react';
+import { conform, useForm, type Submission } from '@conform-to/react';
 import { getFieldsetConstraint, parse } from '@conform-to/zod';
 import {
   json,
@@ -15,53 +15,81 @@ import { StatusButton } from '~/components/ui';
 import { useIsPending } from '~/hooks';
 import { PasswordSchema, UsernameSchema } from '~/schemas';
 import { validateCsrfToken } from '~/utils/csrf.server';
+import { prisma } from '~/utils/db.server';
 import { checkHoneypot } from '~/utils/honeypot.server';
+import { sessionStorage } from '~/utils/session.server';
 
 const LoginFormSchema = z.object({
   username: UsernameSchema,
   password: PasswordSchema,
 });
 
+// needed to allow delete on password (must be optional)
+type CustomSubmission = Submission<
+  | {
+      user: null;
+      username: string;
+      password?: string;
+    }
+  | {
+      user: {
+        id: string;
+      };
+      username: string;
+      password?: string;
+    }
+>;
+
 export async function action({ request }: DataFunctionArgs) {
   const formData = await request.formData();
   await validateCsrfToken(formData, request.headers);
   checkHoneypot(formData);
-  const submission = await parse(formData, {
+  const submission = (await parse(formData, {
     schema: intent =>
       LoginFormSchema.transform(async (data, ctx) => {
         if (intent !== 'submit') return { ...data, user: null };
-        // 🐨 find the user in the database by their username
-        // 🐨 if there's no user by that username then add an issue to the context
-        // and return z.NEVER
-        // 📜 https://zod.dev/?id=validating-during-transform
 
-        // verify the password (we'll do this later)
-        // 💰 return {...data, user}
-        return data;
+        const user = await prisma.user.findUnique({
+          select: { id: true },
+          where: { username: data.username },
+        });
+        if (!user) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Invalid username or password',
+          });
+          return z.NEVER;
+        }
+
+        return { ...data, user };
       }),
     async: true,
-  });
-  // get the password off the payload that's sent back
+  })) as CustomSubmission;
+
+  // remove password from the payload that's sent back
+  // currently conform does not do this automatically
   delete submission.payload.password;
 
   if (submission.intent !== 'submit') {
-    // @ts-expect-error - conform should probably have support for doing this
     delete submission.value?.password;
     return json({ status: 'idle', submission } as const);
   }
-  // 🐨 you can change this check to !submission.value?.user
-  if (!submission.value) {
+
+  if (!submission.value?.user) {
     return json({ status: 'error', submission } as const, { status: 400 });
   }
 
-  // 🐨 get the user from the submission.value
-  // 🐨 use the getSession utility to get the session value from the
-  // request's cookie header 💰 request.headers.get('cookie')
-  // 🐨 set the 'userId' in the session to the user.id
+  const { user } = submission.value;
+  const cookieSession = await sessionStorage.getSession(
+    request.headers.get('cookie'),
+  );
+  cookieSession.set('userId', user.id);
 
-  // 🐨 update this redirect to add a 'set-cookie' header to the result of
-  // commitSession with the session value you're working with
-  return redirect('/');
+  return redirect('/', {
+    headers: {
+      'set-cookie': await sessionStorage.commitSession(cookieSession),
+    },
+  });
 }
 
 export default function LoginPage() {

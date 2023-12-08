@@ -33,8 +33,10 @@ import { getEnv } from '~/utils/env.server';
 import { honeypot } from '~/utils/honeypot.server';
 import { getTheme, setTheme, type Theme } from '~/utils/theme.server';
 import Document from './document';
-import { combineHeaders, invariantResponse } from './utils/misc';
+import { combineHeaders, getUserImgSrc, invariantResponse } from './utils/misc';
 import { getToast } from './utils/toast.server';
+import { prisma } from './utils/db.server';
+import { sessionStorage } from './utils/session.server';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: tailwind },
@@ -47,9 +49,26 @@ export async function loader({ request }: DataFunctionArgs) {
 
   const { toast, headers: toastHeaders } = await getToast(request);
 
+  const cookieSession = await sessionStorage.getSession(
+    request.headers.get('cookie'),
+  );
+  const userId = cookieSession.get('userId');
+  const user = userId
+    ? await prisma.user.findUnique({
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          image: { select: { id: true } },
+        },
+        where: { id: userId },
+      })
+    : null;
+
   return json(
     {
       username: os.userInfo().username,
+      user,
       theme: getTheme(request),
       toast,
       ENV: getEnv(),
@@ -114,6 +133,7 @@ function App() {
   }, []);
 
   const data = useLoaderData<typeof loader>();
+  const user = data.user;
   const theme = useTheme() || systemTheme;
   const matches = useMatches();
   const isOnSearchPage = matches.find(m => m.id === 'routes/users+/index');
@@ -132,9 +152,29 @@ function App() {
             </div>
           )}
           <div className="flex items-center gap-10">
-            <Button asChild variant="default" size="sm">
-              <Link to="/login">Log In</Link>
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Button asChild variant="secondary">
+                  <Link
+                    to={`/users/${user.username}`}
+                    className="flex items-center gap-2"
+                  >
+                    <img
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt={user.name ?? user.username}
+                      src={getUserImgSrc(user.image?.id)}
+                    />
+                    <span className="hidden text-body-sm font-bold sm:block">
+                      {user.name ?? user.username}
+                    </span>
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild variant="default" size="sm">
+                <Link to="/login">Log In</Link>
+              </Button>
+            )}
           </div>
         </nav>
       </header>
